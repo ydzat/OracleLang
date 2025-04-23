@@ -130,6 +130,6 @@ dmypy.json
 
 # 项目特定文件
 config.yaml
-history/
-limits/
+data/history/
+data/limits/
 Design.md
