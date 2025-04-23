@@ -10,5 +10,5 @@ llm:
   api_base: ''
   api_key: ''
   api_type: deepseek
-  enabled: true
+  enabled: false
   model: deepseek-chat
