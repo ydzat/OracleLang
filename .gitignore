@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# 项目特定文件
+config.yaml
+history/
+limits/
+Design.md
