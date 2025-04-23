@@ -4,12 +4,29 @@ OracleLang 是一个基于易经原理的智能算卦插件，为 [LangBot](http
 
 ## 安装
 
-配置完成 [LangBot](https://github.com/RockChinQ/LangBot) 主程序后使用管理员账号向机器人发送命令即可安装：
+### 手动安装（推荐方式）
 
+1. 克隆本仓库到 LangBot 的 plugins 目录下：
 ```
-!plugin get https://github.com/ydzat/OracleLang
+cd /path/to/LangBot/plugins/
+git clone https://github.com/ydzat/OracleLang
 ```
-或查看详细的[插件安装说明](https://docs.langbot.app/plugin/plugin-intro.html#%E6%8F%92%E4%BB%B6%E7%94%A8%E6%B3%95)
+
+2. 重命名配置文件：
+```
+cd OracleLang
+cp config.yaml.example config.yaml
+```
+
+3. 编辑 `config.yaml` 文件，根据需要修改配置
+
+4. 在 LangBot WebUI 控制台中重载插件，或重启 LangBot
+
+### 其他方式
+
+**注意**：通过!plugin 方法可能会安装失败！
+
+也可查看详细的[插件安装说明](https://docs.langbot.app/plugin/plugin-intro.html#%E6%8F%92%E4%BB%B6%E7%94%A8%E6%B3%95)
 
 ## 功能特点
 
@@ -155,7 +172,9 @@ OracleLang 使用多种方法将输入转换为易经中的64卦：
 
 ## 配置文件详解
 
-配置文件位于插件目录下的 `config.yaml`，包含以下主要配置项：
+配置文件应位于插件目录下的 `config.yaml`。首次安装插件时，目录中只有 `config.yaml.example` 示例文件，**请将其重命名为 `config.yaml`** 然后按需修改。
+
+配置文件包含以下主要配置项：
 
 ```yaml
 # 管理员用户列表
@@ -178,7 +197,7 @@ limit:
 llm:
   api_base: ''  # API基础URL（可选，对Azure必填）
   api_key: ''  # API密钥
-  api_type: openai  # 可选值: openai, deepseek使用openai的格式, qianfan, azure
+  api_type: openai  # 可选值: openai, deepseek, qianfan, azure
   enabled: false  # 是否启用LLM增强解释，设为true以启用
   model: gpt-3.5-turbo  # 模型名称
 ```
@@ -194,6 +213,17 @@ llm:
   api_key: "sk-xxxxxxxxxxxxxxxxxxxxxxx"
   api_base: "https://api.openai.com/v1"  # 官方API或代理URL
   model: "gpt-4"
+```
+
+#### DeepSeek API配置
+
+```yaml
+llm:
+  enabled: true
+  api_type: "deepseek"
+  api_key: "sk-xxxxxxxxxxxxxxxxxxxxxxx"
+  api_base: "https://api.deepseek.com/v1"  # 官方API或代理URL
+  model: "deepseek-chat"
 ```
 
 #### 百度千帆API配置
