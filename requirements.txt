@@ -1,0 +1,5 @@
+qianfan
+numpy
+pyyaml
+requests
+aiohttp
