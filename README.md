@@ -24,7 +24,7 @@ cp config.yaml.example config.yaml
 
 ### 其他方式
 
-**注意**：通过!plugin 方法可能会安装失败！
+**注意**：通过`!plugin`方法可能会安装失败！
 
 也可查看详细的[插件安装说明](https://docs.langbot.app/plugin/plugin-intro.html#%E6%8F%92%E4%BB%B6%E7%94%A8%E6%B3%95)
 
@@ -39,6 +39,16 @@ cp config.yaml.example config.yaml
 - **使用限制管理**：防止过度依赖，管理员可调整
 
 ## 使用方法
+
+### 查看帮助
+
+如果您不确定如何使用本插件，可以随时查看帮助信息：
+
+```
+@机器人 算卦 帮助
+```
+
+系统会返回完整的使用说明和示例。
 
 ### 基本用法
 
