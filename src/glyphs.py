@@ -1,39 +1,15 @@
 from typing import List, Dict, Any, Optional
+from .data_constants import TRIGRAMS, UNICODE_SYMBOLS, HEXAGRAM_UNICODE
 
 class HexagramRenderer:
     """
     卦象图形渲染器，用于生成卦象的文字图示
     """
     
-    # Unicode 符号
-    UNICODE_SYMBOLS = {
-        "whole_line": "━━━",  # 阳爻
-        "broken_line": "━ ━",  # 阴爻
-        "arrow": "→"
-    }
-    
-    # 64卦的Unicode字符
-    HEXAGRAM_UNICODE = {
-        # 只列举几个示例，实际应有全部64卦的映射
-        0b111111: "☰",  # 乾
-        0b000000: "☷",  # 坤
-        0b010101: "☯",  # 未济
-        0b101010: "☰",  # 既济
-        0b101101: "☲",  # 离
-        0b010010: "☵",  # 坎
-    }
-    
-    # 八卦符号和名称
-    TRIGRAMS = {
-        0b111: ("☰", "乾", "天"),
-        0b110: ("☱", "兑", "泽"),
-        0b101: ("☲", "离", "火"),
-        0b100: ("☳", "震", "雷"),
-        0b011: ("☴", "巽", "风"),
-        0b010: ("☵", "坎", "水"),
-        0b001: ("☶", "艮", "山"),
-        0b000: ("☷", "坤", "地"),
-    }
+    # 从常量模块导入数据
+    UNICODE_SYMBOLS = UNICODE_SYMBOLS
+    HEXAGRAM_UNICODE = HEXAGRAM_UNICODE
+    TRIGRAMS = TRIGRAMS
     
     def render_hexagram(self, original: List[int], changed: List[int], 
                         moving: List[int], style: str = "detailed") -> str:

@@ -21,7 +21,7 @@ from . import config
 @register(
     name="OracleLang",
     description="一个基于易经原理的智能算卦插件。支持多种起卦方式，提供专业的卦象解读。",
-    version="1.0.0",
+    version="1.0.1",
     author="ydzat"
 )
 class OracleLangPlugin(BasePlugin):
