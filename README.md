@@ -4,6 +4,11 @@ OracleLang 是一个基于易经原理的智能算卦插件，为 [LangBot](http
 
 ## 更新日志
 
+### 1.0.2 (2025-04-25 (+2) 12:40)
+- 改进：优化配置文件管理，自动生成默认配置
+- 移除：删除多余的config.yaml.example文件
+- 更新：完善README文档，明确配置文件自动生成机制
+
 ### 1.0.1 (2025-04-24 (+2) 09:50)
 - 优化：将静态数据从代码中分离，统一到data_constants.py模块
 - 改进：完善HEXAGRAM_UNICODE映射表，支持所有64卦显示
@@ -16,9 +21,9 @@ OracleLang 是一个基于易经原理的智能算卦插件，为 [LangBot](http
 - 添加用户使用限制
 - 支持历史记录查询
 
-## 安装
+## 安装（二选一）
 
-### 手动安装（推荐方式）
+### 手动安装
 
 1. 克隆本仓库到 LangBot 的 plugins 目录下：
 ```
@@ -26,19 +31,17 @@ cd /path/to/LangBot/plugins/
 git clone https://github.com/ydzat/OracleLang
 ```
 
-2. 重命名配置文件：
+2. 安装完成后，直接在 LangBot WebUI 控制台中加载插件，或重启 LangBot
+
+### 管理员指令安装（推荐方式）
+
+在运行期间，使用管理员账号对机器人私聊发送`!plugin get <GitHub储存库地址>`即可自动获取源码并安装插件，程序会根据仓库中的requirements.txt文件自动安装依赖库。
+
 ```
-cd OracleLang
-cp config.yaml.example config.yaml
+!plugin get https://github.com/ydzat/OracleLang
 ```
 
-3. 编辑 `config.yaml` 文件，根据需要修改配置
-
-4. 在 LangBot WebUI 控制台中重载插件，或重启 LangBot
-
-### 其他方式
-
-**注意**：通过`!plugin`方法可能会安装失败！
+安装完成后重启程序。
 
 也可查看详细的[插件安装说明](https://docs.langbot.app/plugin/plugin-intro.html#%E6%8F%92%E4%BB%B6%E7%94%A8%E6%B3%95)
 
@@ -196,7 +199,7 @@ OracleLang 使用多种方法将输入转换为易经中的64卦：
 
 ## 配置文件详解
 
-配置文件应位于插件目录下的 `config.yaml`。首次安装插件时，目录中只有 `config.yaml.example` 示例文件，**请将其重命名为 `config.yaml`** 然后按需修改。
+配置文件位于插件目录下的 `config.yaml`。**首次启动插件时，系统会自动生成默认配置文件**，您可以根据需要进行修改。
 
 配置文件包含以下主要配置项：
 
