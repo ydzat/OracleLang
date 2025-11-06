@@ -1,0 +1,163 @@
+apiVersion: v1
+kind: Plugin
+metadata:
+  author: ydzat
+  name: OracleLang
+  repository: 'https://github.com/ydzat/OracleLang'
+  version: 2.0.0
+  description:
+    en_US: 'An intelligent divination plugin based on I Ching principles. Supports multiple divination methods and provides professional hexagram interpretations.'
+    zh_Hans: '一个基于易经原理的智能算卦插件。支持多种起卦方式,提供专业的卦象解读。'
+  label:
+    en_US: OracleLang
+    zh_Hans: OracleLang 易经算卦
+  icon: assets/icon.svg
+spec:
+  config:
+    - name: daily_max
+      type: integer
+      label:
+        en_US: Daily Divination Limit
+        zh_Hans: 每日算卦次数限制
+      description:
+        en_US: Maximum number of divinations per user per day
+        zh_Hans: 每位用户每天最多可以算卦的次数
+      default: 3
+      required: false
+    
+    - name: reset_hour
+      type: integer
+      label:
+        en_US: Daily Reset Hour
+        zh_Hans: 每日重置时间
+      description:
+        en_US: Hour of day to reset usage count (0-23, UTC+8)
+        zh_Hans: 每日重置使用次数的时间点（0-23，东八区时间）
+      default: 0
+      required: false
+    
+    - name: llm_enabled
+      type: boolean
+      label:
+        en_US: Enable LLM Interpretation
+        zh_Hans: 启用大模型解释
+      description:
+        en_US: Use LLM to provide enhanced hexagram interpretations
+        zh_Hans: 使用大语言模型提供增强的卦象解释
+      default: false
+      required: false
+    
+    - name: llm_api_type
+      type: select
+      label:
+        en_US: LLM API Type
+        zh_Hans: 大模型API类型
+      description:
+        en_US: Type of LLM API to use
+        zh_Hans: 使用的大语言模型API类型
+      options:
+        - name: openai
+          label:
+            en_US: OpenAI
+            zh_Hans: OpenAI
+        - name: deepseek
+          label:
+            en_US: DeepSeek
+            zh_Hans: DeepSeek
+        - name: qianfan
+          label:
+            en_US: Baidu Qianfan
+            zh_Hans: 百度千帆
+        - name: azure
+          label:
+            en_US: Azure OpenAI
+            zh_Hans: Azure OpenAI
+      default: openai
+      required: false
+    
+    - name: llm_api_key
+      type: string
+      label:
+        en_US: LLM API Key
+        zh_Hans: 大模型API密钥
+      description:
+        en_US: API key for the LLM service
+        zh_Hans: 大语言模型服务的API密钥
+      default: ''
+      required: false
+    
+    - name: llm_api_base
+      type: string
+      label:
+        en_US: LLM API Base URL
+        zh_Hans: 大模型API基础URL
+      description:
+        en_US: Base URL for the LLM API (optional, required for Azure)
+        zh_Hans: 大语言模型API的基础URL（可选，Azure必填）
+      default: ''
+      required: false
+    
+    - name: llm_model
+      type: string
+      label:
+        en_US: LLM Model Name
+        zh_Hans: 大模型名称
+      description:
+        en_US: Name of the LLM model to use
+        zh_Hans: 使用的大语言模型名称
+      default: 'gpt-3.5-turbo'
+      required: false
+    
+    - name: display_style
+      type: select
+      label:
+        en_US: Hexagram Display Style
+        zh_Hans: 卦象显示风格
+      description:
+        en_US: Visual style for displaying hexagrams
+        zh_Hans: 卦象的视觉显示风格
+      options:
+        - name: simple
+          label:
+            en_US: Simple
+            zh_Hans: 简洁
+        - name: traditional
+          label:
+            en_US: Traditional
+            zh_Hans: 传统
+        - name: detailed
+          label:
+            en_US: Detailed
+            zh_Hans: 详细
+      default: detailed
+      required: false
+    
+    - name: admin_users
+      type: array[string]
+      label:
+        en_US: Admin User IDs
+        zh_Hans: 管理员用户ID列表
+      description:
+        en_US: List of user IDs with admin privileges
+        zh_Hans: 拥有管理员权限的用户ID列表
+      default: []
+      required: false
+    
+    - name: debug
+      type: boolean
+      label:
+        en_US: Debug Mode
+        zh_Hans: 调试模式
+      description:
+        en_US: Enable debug output
+        zh_Hans: 启用调试输出
+      default: false
+      required: false
+  
+  components: {}
+
+execution:
+  python:
+    path: main.py
+    attr: OracleLangPlugin
+

@@ -1,49 +1,62 @@
 # OracleLang 插件
 
-OracleLang 是一个基于易经原理的智能算卦插件，为 [LangBot](https://github.com/RockChinQ/LangBot) 平台开发。它结合《易经》原理与数学模型，通过用户的问题生成卦象，并提供图示和解释。
+OracleLang 是一个基于易经原理的智能算卦插件，为 [LangBot](https://github.com/langbot-app/LangBot) 平台开发。它结合《易经》原理与数学模型，通过用户的问题生成卦象，并提供图示和解释。
 
 ## 更新日志
 
-### 1.0.2 (2025-04-25 (+2) 12:40)
+### 2.0.0 (2025-01-06)
+- **重大更新**：迁移到 LangBot 4.0 插件系统
+- 新增：使用新的组件化架构（manifest.yaml + components）
+- 新增：通过 WebUI 配置插件参数
+- 改进：使用新的事件监听器组件处理消息
+- 改进：更好的日志记录和错误处理
+- 改进：配置管理通过 manifest.yaml 进行
+- 注意：此版本需要 LangBot 4.0 或更高版本
+
+### 1.0.2 (2025-04-25)
 - 改进：优化配置文件管理，自动生成默认配置
 - 移除：删除多余的config.yaml.example文件
 - 更新：完善README文档，明确配置文件自动生成机制
 
-### 1.0.1 (2025-04-24 (+2) 09:50)
+### 1.0.1 (2025-04-24)
 - 优化：将静态数据从代码中分离，统一到data_constants.py模块
 - 改进：完善HEXAGRAM_UNICODE映射表，支持所有64卦显示
 - 增加：添加HEXAGRAM_NAMES常量，便于卦象名称查询
 
-### 1.0.0 (2025-04-24 (+2) 01:00)
+### 1.0.0 (2025-04-24)
 - 首次发布
 - 支持多种起卦方式
 - 实现基本卦象解读功能
 - 添加用户使用限制
 - 支持历史记录查询
 
-## 安装（二选一）
+## 系统要求
+
+- LangBot 4.0 或更高版本
+- Python 3.10+
+
+## 安装
+
+### 通过 WebUI 安装（推荐）
+
+1. 打开 LangBot WebUI
+2. 进入"插件"页面
+3. 点击"安装插件"
+4. 选择"从 GitHub 安装"
+5. 输入仓库地址：`https://github.com/ydzat/OracleLang`
+6. 点击"安装"
 
 ### 手动安装
 
-1. 克隆本仓库到 LangBot 的 plugins 目录下：
-```
-cd /path/to/LangBot/plugins/
+1. 克隆本仓库到 LangBot 的 `data/plugins` 目录下：
+```bash
+cd /path/to/LangBot/data/plugins/
 git clone https://github.com/ydzat/OracleLang
 ```
 
-2. 安装完成后，直接在 LangBot WebUI 控制台中加载插件，或重启 LangBot
+2. 在 LangBot WebUI 中启用插件
 
-### 管理员指令安装（推荐方式）
-
-在运行期间，使用管理员账号对机器人私聊发送`!plugin get <GitHub储存库地址>`即可自动获取源码并安装插件，程序会根据仓库中的requirements.txt文件自动安装依赖库。
-
-```
-!plugin get https://github.com/ydzat/OracleLang
-```
-
-安装完成后重启程序。
-
-也可查看详细的[插件安装说明](https://docs.langbot.app/plugin/plugin-intro.html#%E6%8F%92%E4%BB%B6%E7%94%A8%E6%B3%95)
+详细安装说明请参考 [LangBot 插件文档](https://docs.langbot.app/zh/plugin/plugin-intro.html)
 
 ## 功能特点
 
@@ -197,83 +210,57 @@ OracleLang 使用多种方法将输入转换为易经中的64卦：
 
 为避免过度依赖，系统默认限制每位用户每日算卦3次（东八区时间计算，每天0点重置）。管理员可以通过设置命令调整此限制。
 
-## 配置文件详解
+## 配置说明
 
-配置文件位于插件目录下的 `config.yaml`。**首次启动插件时，系统会自动生成默认配置文件**，您可以根据需要进行修改。
+在 LangBot 4.0 中，插件配置通过 WebUI 进行管理。安装插件后，在插件页面点击"配置"按钮即可修改以下配置项：
 
-配置文件包含以下主要配置项：
+### 基本配置
 
-```yaml
-# 管理员用户列表
-admin_users: []  # 管理员用户ID列表，可添加多个，例如 ["12345678", "87654321"]
+- **每日算卦次数限制** (`daily_max`): 每位用户每天最多可以算卦的次数（默认：3）
+- **每日重置时间** (`reset_hour`): 每日重置使用次数的时间点，0-23，东八区时间（默认：0，即午夜）
+- **卦象显示风格** (`display_style`): 卦象的视觉显示风格
+  - `simple`: 简洁
+  - `traditional`: 传统
+  - `detailed`: 详细（默认）
+- **管理员用户ID列表** (`admin_users`): 拥有管理员权限的用户ID列表
+- **调试模式** (`debug`): 启用调试输出（默认：false）
 
-# 调试模式
-debug: false  # 设置为true启用调试输出
+### 大语言模型配置（可选）
 
-# 显示配置
-display:
-  language: zh  # 显示语言，目前支持中文(zh)
-  style: detailed  # 卦象显示样式，可选: simple, traditional, detailed
-
-# 使用限制
-limit:
-  daily_max: 3  # 每人每日最大算卦次数
-  reset_hour: 0  # 每日重置时间，0表示午夜0点
-
-# 大语言模型集成设置（可选）
-llm:
-  api_base: ''  # API基础URL（可选，对Azure必填）
-  api_key: ''  # API密钥
-  api_type: openai  # 可选值: openai, deepseek, qianfan, azure
-  enabled: false  # 是否启用LLM增强解释，设为true以启用
-  model: gpt-3.5-turbo  # 模型名称
-```
+- **启用大模型解释** (`llm_enabled`): 使用大语言模型提供增强的卦象解释（默认：false）
+- **大模型API类型** (`llm_api_type`): 可选值
+  - `openai`: OpenAI
+  - `deepseek`: DeepSeek
+  - `qianfan`: 百度千帆
+  - `azure`: Azure OpenAI
+- **大模型API密钥** (`llm_api_key`): 大语言模型服务的API密钥
+- **大模型API基础URL** (`llm_api_base`): API的基础URL（可选，Azure必填）
+- **大模型名称** (`llm_model`): 使用的大语言模型名称（默认：gpt-3.5-turbo）
 
 ### 大语言模型配置示例
 
-#### OpenAI API配置
+#### OpenAI API
+- API类型: `openai`
+- API密钥: `sk-xxxxxxxxxxxxxxxxxxxxxxx`
+- API基础URL: `https://api.openai.com/v1`
+- 模型: `gpt-4`
 
-```yaml
-llm:
-  enabled: true
-  api_type: "openai"
-  api_key: "sk-xxxxxxxxxxxxxxxxxxxxxxx"
-  api_base: "https://api.openai.com/v1"  # 官方API或代理URL
-  model: "gpt-4"
-```
+#### DeepSeek API
+- API类型: `deepseek`
+- API密钥: `sk-xxxxxxxxxxxxxxxxxxxxxxx`
+- API基础URL: `https://api.deepseek.com/v1`
+- 模型: `deepseek-chat`
 
-#### DeepSeek API配置
+#### 百度千帆API
+- API类型: `qianfan`
+- API密钥: 您的千帆API密钥
+- 模型: `ERNIE-Bot-4`
 
-```yaml
-llm:
-  enabled: true
-  api_type: "deepseek"
-  api_key: "sk-xxxxxxxxxxxxxxxxxxxxxxx"
-  api_base: "https://api.deepseek.com/v1"  # 官方API或代理URL
-  model: "deepseek-chat"
-```
-
-#### 百度千帆API配置
-
-```yaml
-llm:
-  enabled: true
-  api_type: "qianfan"
-  api_key: "xxxxxxxxxxxxxxxxxxxxxxx"
-  api_secret: "xxxxxxxxxxxxxxxxxxxxxxx"
-  model: "ERNIE-Bot-4"
-```
-
-#### Azure OpenAI配置
-
-```yaml
-llm:
-  enabled: true
-  api_type: "azure"
-  api_key: "xxxxxxxxxxxxxxxxxxxxxxx"
-  api_base: "https://your-resource.openai.azure.com"  # 必须是完整URL
-  model: "deployment-name"  # Azure部署名称
-```
+#### Azure OpenAI
+- API类型: `azure`
+- API密钥: 您的Azure密钥
+- API基础URL: `https://your-resource.openai.azure.com`（必填）
+- 模型: 您的部署名称
 
 ## 技术原理
 
@@ -287,17 +274,26 @@ OracleLang 采用异步处理架构，保证在高并发情况下的稳定性。
 
 ## 常见问题
 
-### 1. 为什么我无法使用管理员命令？
-请确保您的用户ID已添加到配置文件的管理员列表中。
+### 1. 如何配置插件？
+在 LangBot WebUI 的插件页面，找到 OracleLang 插件，点击"配置"按钮即可修改配置。
 
-### 2. 如何查看剩余算卦次数？
+### 2. 为什么我无法使用管理员命令？
+请确保您的用户ID已添加到插件配置的"管理员用户ID列表"中。可以通过发送"算卦 我的ID"命令查看您的用户ID。
+
+### 3. 如何查看剩余算卦次数？
 每次算卦结果都会显示您当日剩余的算卦次数。
 
-### 3. 大语言模型解释准确吗？
+### 4. 大语言模型解释准确吗？
 大语言模型提供的是参考性解释，结合了易经原理和现代解读。它不是完全权威的，建议结合个人判断。
 
-### 4. 如何保存算卦结果？
-算卦结果会自动保存到历史记录中，可通过"算卦 历史"命令查看。
+### 5. 如何保存算卦结果？
+算卦结果会自动保存到历史记录中，可通过"算卦 历史"命令查看最近5条记录。
+
+### 6. 插件不工作怎么办？
+- 确保 LangBot 版本为 4.0 或更高
+- 检查插件是否已在 WebUI 中启用
+- 查看 LangBot 日志以获取错误信息
+- 确保所有依赖已正确安装
 
 ## 反馈与支持
 

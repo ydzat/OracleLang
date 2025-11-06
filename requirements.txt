@@ -1,3 +1,4 @@
+langbot_plugin
 qianfan
 numpy
 pyyaml
