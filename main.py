@@ -10,12 +10,12 @@ from typing import Dict, Any
 from langbot_plugin.api.definition.plugin import BasePlugin
 
 # Import core modules
-from .src.calculator import HexagramCalculator
-from .src.interpreter import HexagramInterpreter
-from .src.glyphs import HexagramRenderer
-from .src.history import HistoryManager
-from .src.limit import UsageLimit
-from .src.config_validator import validate_config
+from src.calculator import HexagramCalculator
+from src.interpreter import HexagramInterpreter
+from src.glyphs import HexagramRenderer
+from src.history import HistoryManager
+from src.limit import UsageLimit
+from src.config_validator import validate_config
 
 
 class OracleLangPlugin(BasePlugin):
