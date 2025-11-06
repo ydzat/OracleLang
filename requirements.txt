@@ -4,3 +4,4 @@ numpy
 pyyaml
 requests
 aiohttp
+filelock>=3.12.0

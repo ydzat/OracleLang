@@ -1,10 +1,10 @@
 import os
 import json
 import time
-import fcntl
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
+from filelock import FileLock
 
 
 class UsageLimit:
@@ -41,25 +41,25 @@ class UsageLimit:
         """加载使用数据文件，并确保用户 ID 的唯一性"""
         if os.path.exists(self.limit_file):
             try:
-                with open(self.limit_file, "r", encoding="utf-8") as f:
-                    # 获取文件锁
-                    fcntl.flock(f, fcntl.LOCK_SH)
-                    # 读取数据
-                    data = json.load(f)
-                    # 释放文件锁
-                    fcntl.flock(f, fcntl.LOCK_UN)
-                    
-                    # 确保 users 字典存在
-                    if "users" not in data:
-                        data["users"] = {}
-                    
-                    # 去重处理，确保用户 ID 唯一且为字符串类型
-                    unique_users = {}
-                    for user_id, user_data in data["users"].items():
-                        unique_users[str(user_id)] = user_data
-                    
-                    data["users"] = unique_users
-                    return data
+                # 使用跨平台文件锁
+                lock_file = self.limit_file + ".lock"
+                lock = FileLock(lock_file, timeout=10)
+
+                with lock:
+                    with open(self.limit_file, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+
+                # 确保 users 字典存在
+                if "users" not in data:
+                    data["users"] = {}
+
+                # 去重处理，确保用户 ID 唯一且为字符串类型
+                unique_users = {}
+                for user_id, user_data in data["users"].items():
+                    unique_users[str(user_id)] = user_data
+
+                data["users"] = unique_users
+                return data
             except Exception as e:
                 self.logger.error(f"Failed to load usage data: {str(e)}", exc_info=True)
                 return {"last_reset": self._get_current_date(), "users": {}}
@@ -75,17 +75,16 @@ class UsageLimit:
                 # 确保用户ID始终是字符串类型
                 user_id_str = str(user_id)
                 unique_users[user_id_str] = user_data
-            
+
             self.usage_data["users"] = unique_users
 
-            # 使用文件锁确保文件写入的原子性
-            with open(self.limit_file, "w", encoding="utf-8") as f:
-                # 获取文件锁
-                fcntl.flock(f, fcntl.LOCK_EX)
-                # 写入数据
-                json.dump(self.usage_data, f, ensure_ascii=False, indent=2)
-                # 释放文件锁
-                fcntl.flock(f, fcntl.LOCK_UN)
+            # 使用跨平台文件锁确保文件写入的原子性
+            lock_file = self.limit_file + ".lock"
+            lock = FileLock(lock_file, timeout=10)
+
+            with lock:
+                with open(self.limit_file, "w", encoding="utf-8") as f:
+                    json.dump(self.usage_data, f, ensure_ascii=False, indent=2)
 
         except Exception as e:
             self.logger.error(f"Failed to save usage data: {str(e)}", exc_info=True)

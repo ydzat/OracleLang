@@ -1,9 +1,9 @@
 import os
 import json
-import fcntl
 import asyncio
 import logging
 from typing import Dict, List, Any, Optional
+from filelock import FileLock
 
 
 class HexagramInterpreter:
@@ -34,15 +34,13 @@ class HexagramInterpreter:
 
             self.logger.debug(f"Loading hexagram data from: {data_file}")
 
-            # 加载数据
-            with open(data_file, "r", encoding="utf-8") as f:
-                # 获取文件锁
-                fcntl.flock(f, fcntl.LOCK_SH)
-                try:
+            # 加载数据（使用跨平台文件锁）
+            lock_file = data_file + ".lock"
+            lock = FileLock(lock_file, timeout=10)
+
+            with lock:
+                with open(data_file, "r", encoding="utf-8") as f:
                     self.hexagrams_data = json.load(f)
-                finally:
-                    # 释放文件锁
-                    fcntl.flock(f, fcntl.LOCK_UN)
 
             self.data_loaded = True
             self.logger.info(f"Loaded {len(self.hexagrams_data)} hexagrams data")
@@ -62,16 +60,15 @@ class HexagramInterpreter:
         # 完整的64卦数据
         default_data = self._get_complete_hexagram_data()
 
-        # 写入文件
+        # 写入文件（使用跨平台文件锁）
         try:
-            with open(file_path, "w", encoding="utf-8") as f:
-                # 获取文件锁
-                fcntl.flock(f, fcntl.LOCK_EX)
-                try:
+            lock_file = file_path + ".lock"
+            lock = FileLock(lock_file, timeout=10)
+
+            with lock:
+                with open(file_path, "w", encoding="utf-8") as f:
                     json.dump(default_data, f, ensure_ascii=False, indent=2)
-                finally:
-                    # 释放文件锁
-                    fcntl.flock(f, fcntl.LOCK_UN)
+
             self.logger.info(f"Created default hexagram data file with {len(default_data)} hexagrams")
         except Exception as e:
             self.logger.error(f"Failed to create default hexagram data: {str(e)}", exc_info=True)
