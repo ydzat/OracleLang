@@ -2,22 +2,26 @@ import os
 import json
 import time
 import fcntl
+import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+
 
 class HistoryManager:
     """
     用户历史记录管理类，用于保存和读取用户的算卦历史
     """
-    
-    def __init__(self, history_dir: str = None):
+
+    def __init__(self, history_dir: str = None, logger: Optional[logging.Logger] = None):
         if history_dir is None:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             self.history_dir = os.path.join(base_dir, "data/history")
         else:
             self.history_dir = history_dir
-            
+
+        self.logger = logger or logging.getLogger(__name__)
         os.makedirs(self.history_dir, exist_ok=True)
+        self.logger.debug(f"HistoryManager initialized with directory: {self.history_dir}")
         
     def save_record(self, user_id: str, question: str, hexagram_data: Dict, interpretation: Dict) -> bool:
         """
@@ -86,9 +90,9 @@ class HistoryManager:
                 fcntl.flock(f, fcntl.LOCK_UN)
                 
             return True
-            
+
         except Exception as e:
-            print(f"保存历史记录失败: {str(e)}")
+            self.logger.error(f"Failed to save history record for user {user_id}: {str(e)}", exc_info=True)
             return False
             
     def get_recent_records(self, user_id: str, limit: int = 5) -> List[Dict]:
@@ -116,9 +120,9 @@ class HistoryManager:
                 
             # 返回最近的n条记录
             return history[-limit:][::-1]
-            
+
         except Exception as e:
-            print(f"读取历史记录失败: {str(e)}")
+            self.logger.error(f"Failed to read history records for user {user_id}: {str(e)}", exc_info=True)
             return []
             
     def get_record_by_index(self, user_id: str, index: int) -> Optional[Dict]:
@@ -154,8 +158,9 @@ class HistoryManager:
         if os.path.exists(history_file):
             try:
                 os.remove(history_file)
+                self.logger.info(f"Cleared history for user {user_id}")
                 return True
             except Exception as e:
-                print(f"清除历史记录失败: {str(e)}")
-                
+                self.logger.error(f"Failed to clear history for user {user_id}: {str(e)}", exc_info=True)
+
         return False

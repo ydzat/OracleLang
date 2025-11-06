@@ -2,44 +2,60 @@ import os
 import json
 import fcntl
 import asyncio
+import logging
 from typing import Dict, List, Any, Optional
+
 
 class HexagramInterpreter:
     """
     卦象解释器，负责提供卦象的名称、爻辞、解释等内容
     """
-    
-    def __init__(self, config: Dict, base_dir=None):
+
+    def __init__(self, config: Dict, base_dir=None, logger: Optional[logging.Logger] = None):
         self.config = config
         self.base_dir = base_dir if base_dir else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.hexagrams_data = {}  # 卦象静态数据
         self.data_loaded = False
+        self.logger = logger or logging.getLogger(__name__)
     
     async def load_data(self):
         """加载卦象静态数据"""
-        # 确保data目录存在
-        data_dir = os.path.join(self.base_dir, "data/static")
-        os.makedirs(data_dir, exist_ok=True)
-        
-        data_file = os.path.join(data_dir, "hexagrams.json")
-        
-        # 检查数据文件是否存在，不存在则创建基础数据
-        if not os.path.exists(data_file):
-            await self._create_default_data(data_file)
-            
-        # 加载数据
         try:
+            # 确保data目录存在
+            data_dir = os.path.join(self.base_dir, "data/static")
+            os.makedirs(data_dir, exist_ok=True)
+
+            data_file = os.path.join(data_dir, "hexagrams.json")
+
+            # 检查数据文件是否存在，不存在则创建基础数据
+            if not os.path.exists(data_file):
+                self.logger.info(f"Hexagram data file not found, creating default data: {data_file}")
+                await self._create_default_data(data_file)
+
+            self.logger.debug(f"Loading hexagram data from: {data_file}")
+
+            # 加载数据
             with open(data_file, "r", encoding="utf-8") as f:
                 # 获取文件锁
                 fcntl.flock(f, fcntl.LOCK_SH)
-                self.hexagrams_data = json.load(f)
-                # 释放文件锁
-                fcntl.flock(f, fcntl.LOCK_UN)
-                
+                try:
+                    self.hexagrams_data = json.load(f)
+                finally:
+                    # 释放文件锁
+                    fcntl.flock(f, fcntl.LOCK_UN)
+
             self.data_loaded = True
-        except Exception as e:
-            print(f"加载卦象数据失败: {str(e)}")
+            self.logger.info(f"Loaded {len(self.hexagrams_data)} hexagrams data")
+
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Failed to parse hexagram data JSON: {str(e)}", exc_info=True)
             self.hexagrams_data = {}
+            raise
+
+        except Exception as e:
+            self.logger.error(f"Failed to load hexagram data: {str(e)}", exc_info=True)
+            self.hexagrams_data = {}
+            raise
             
     async def _create_default_data(self, file_path: str):
         """创建默认的卦象数据文件"""
@@ -219,9 +235,7 @@ class HexagramInterpreter:
                 raise ValueError(f"不支持的API类型: {api_type}")
                 
         except Exception as e:
-            print(f"调用大语言模型API出错: {str(e)}")
-            import traceback
-            print(traceback.format_exc())
+            self.logger.error(f"LLM API call failed: {str(e)}", exc_info=True)
             return {}
             
     async def _call_openai(self, prompt: str) -> Dict[str, str]:
@@ -393,7 +407,7 @@ class HexagramInterpreter:
             }
             
         except Exception as e:
-            print(f"调用千帆API失败: {str(e)}")
+            self.logger.error(f"Qianfan API call failed: {str(e)}", exc_info=True)
             return {}
 
     async def _call_azure(self, prompt: str) -> Dict[str, str]:
@@ -592,7 +606,7 @@ class HexagramInterpreter:
                     return result
                 else:
                     error_text = await response.text()
-                    print(f"DeepSeek API调用失败: 状态码 {response.status}")
+                    self.logger.error(f"DeepSeek API call failed: status {response.status}")
                     raise Exception(f"API调用失败: {response.status} - {error_text}")
                     
     def _build_llm_prompt(self, question: str, original_name: str, 
