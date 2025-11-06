@@ -1,6 +1,6 @@
 """
 OracleLang Plugin - I Ching Divination Plugin for LangBot
-Version: 2.0.0
+Version: 2.0.1
 Author: ydzat
 """
 import os

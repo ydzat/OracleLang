@@ -4,7 +4,7 @@ metadata:
   author: ydzat
   name: OracleLang
   repository: 'https://github.com/ydzat/OracleLang'
-  version: 2.0.0
+  version: 2.0.1
   description:
     en_US: 'An intelligent divination plugin based on I Ching principles. Supports multiple divination methods and provides professional hexagram interpretations.'
     zh_Hans: '一个基于易经原理的智能算卦插件。支持多种起卦方式,提供专业的卦象解读。'
