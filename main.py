@@ -15,6 +15,7 @@ from .src.interpreter import HexagramInterpreter
 from .src.glyphs import HexagramRenderer
 from .src.history import HistoryManager
 from .src.limit import UsageLimit
+from .src.config_validator import validate_config
 
 
 class OracleLangPlugin(BasePlugin):
@@ -58,6 +59,7 @@ class OracleLangPlugin(BasePlugin):
                 "api_type": config_data.get("llm_api_type", "openai"),
                 "api_key": config_data.get("llm_api_key", ""),
                 "api_base": config_data.get("llm_api_base", ""),
+                "api_secret": config_data.get("llm_api_secret", ""),
                 "model": config_data.get("llm_model", "gpt-3.5-turbo")
             },
             "display": {
@@ -67,6 +69,20 @@ class OracleLangPlugin(BasePlugin):
             "admin_users": config_data.get("admin_users", []),
             "debug": config_data.get("debug", False)
         }
+
+        # Validate configuration
+        self.ap.logger.info("Validating plugin configuration...")
+        is_valid, errors, warnings = validate_config(self.plugin_config, self.ap.logger)
+
+        if not is_valid:
+            error_msg = "Configuration validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
+            self.ap.logger.error(error_msg)
+            raise ValueError(error_msg)
+
+        if warnings:
+            self.ap.logger.warning(f"Configuration has {len(warnings)} warning(s)")
+
+        self.ap.logger.info("Configuration validation passed")
 
         # Initialize core modules with logger
         self.calculator = HexagramCalculator(logger=self.ap.logger)
