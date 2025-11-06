@@ -6,6 +6,24 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from filelock import FileLock
 
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    # Fallback for Python < 3.9
+    from datetime import timezone
+
+    class ZoneInfo:
+        """Minimal ZoneInfo fallback for Python < 3.9"""
+        def __init__(self, key: str):
+            # Simple UTC+8 fallback for Asia/Shanghai
+            if "Shanghai" in key or "Hong_Kong" in key or "Taipei" in key:
+                self.offset = 8
+            else:
+                self.offset = 0
+
+        def __repr__(self):
+            return f"ZoneInfo(UTC+{self.offset})"
+
 
 class UsageLimit:
     """
@@ -24,6 +42,15 @@ class UsageLimit:
 
         self.limit_file = os.path.join(self.limit_dir, "daily_usage.json")
 
+        # Get timezone from config, default to Asia/Shanghai (UTC+8)
+        timezone_str = self.config.get("timezone", "Asia/Shanghai")
+        try:
+            self.timezone = ZoneInfo(timezone_str)
+            self.logger.debug(f"Using timezone: {timezone_str}")
+        except Exception as e:
+            self.logger.warning(f"Invalid timezone '{timezone_str}', falling back to Asia/Shanghai: {e}")
+            self.timezone = ZoneInfo("Asia/Shanghai")
+
         # 确保目录存在
         os.makedirs(self.limit_dir, exist_ok=True)
         self.logger.debug(f"UsageLimit initialized with directory: {self.limit_dir}")
@@ -33,7 +60,7 @@ class UsageLimit:
 
         # 检查是否需要重置
         self._check_reset()
-        
+
         # 文件锁，用于确保多进程安全
         self.file_lock = None
     
@@ -90,9 +117,8 @@ class UsageLimit:
             self.logger.error(f"Failed to save usage data: {str(e)}", exc_info=True)
             
     def _get_current_date(self) -> str:
-        """获取当前日期字符串（东八区时间）"""
-        # 使用UTC+8时间
-        now = datetime.utcnow() + timedelta(hours=8)
+        """获取当前日期字符串（使用配置的时区）"""
+        now = datetime.now(self.timezone)
         return now.strftime("%Y-%m-%d")
         
     def _check_reset(self):
@@ -243,15 +269,21 @@ class UsageLimit:
     def get_reset_time(self) -> str:
         """
         获取下次重置时间
-        
+
         返回:
             下次重置时间的字符串
         """
-        # 使用UTC+8时间
-        now = datetime.utcnow() + timedelta(hours=8)
-        
-        # 计算下一个0点
-        next_day = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-        
+        # 使用配置的时区
+        now = datetime.now(self.timezone)
+
+        # Get reset hour from config (default 0)
+        reset_hour = self.config.get("limit", {}).get("reset_hour", 0)
+
+        # Calculate next reset time
+        next_reset = now.replace(hour=reset_hour, minute=0, second=0, microsecond=0)
+        if now.hour >= reset_hour:
+            # If current time is past reset hour, next reset is tomorrow
+            next_reset += timedelta(days=1)
+
         # 格式化时间
-        return next_day.strftime("%Y-%m-%d %H:%M:%S")
+        return next_reset.strftime("%Y-%m-%d %H:%M:%S")

@@ -158,6 +158,17 @@ spec:
       default: false
       required: false
 
+    - name: timezone
+      type: string
+      label:
+        en_US: Timezone
+        zh_Hans: 时区
+      description:
+        en_US: Timezone for daily reset (e.g., Asia/Shanghai, America/New_York, Europe/London)
+        zh_Hans: 每日重置使用的时区（如 Asia/Shanghai、America/New_York、Europe/London）
+      default: 'Asia/Shanghai'
+      required: false
+
 execution:
   python:
     path: main.py
