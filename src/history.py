@@ -1,10 +1,10 @@
 import os
 import json
 import time
-import fcntl
 import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+from filelock import FileLock
 
 
 class HistoryManager:
@@ -61,34 +61,31 @@ class HistoryManager:
                 "interpretation_summary": interpretation.get("overall_meaning", "")
             }
             
-            # 读取现有历史数据
+            # 读取现有历史数据（使用跨平台文件锁）
             history_file = os.path.join(self.history_dir, f"{user_id}.json")
+            lock_file = history_file + ".lock"
+            lock = FileLock(lock_file, timeout=10)
             history = []
-            
-            if os.path.exists(history_file):
-                try:
-                    with open(history_file, "r", encoding="utf-8") as f:
-                        # 获取读取锁
-                        fcntl.flock(f, fcntl.LOCK_SH)
-                        history = json.load(f)
-                        fcntl.flock(f, fcntl.LOCK_UN)
-                except:
-                    history = []
-            
-            # 添加新记录
-            history.append(record)
-            
-            # 如果记录过多，只保留最近的20条
-            if len(history) > 20:
-                history = history[-20:]
-                
-            # 保存回文件
-            with open(history_file, "w", encoding="utf-8") as f:
-                # 获取写入锁
-                fcntl.flock(f, fcntl.LOCK_EX)
-                json.dump(history, f, ensure_ascii=False, indent=2)
-                fcntl.flock(f, fcntl.LOCK_UN)
-                
+
+            with lock:
+                if os.path.exists(history_file):
+                    try:
+                        with open(history_file, "r", encoding="utf-8") as f:
+                            history = json.load(f)
+                    except:
+                        history = []
+
+                # 添加新记录
+                history.append(record)
+
+                # 如果记录过多，只保留最近的20条
+                if len(history) > 20:
+                    history = history[-20:]
+
+                # 保存回文件
+                with open(history_file, "w", encoding="utf-8") as f:
+                    json.dump(history, f, ensure_ascii=False, indent=2)
+
             return True
 
         except Exception as e:
@@ -107,17 +104,19 @@ class HistoryManager:
             记录列表，从新到旧排序
         """
         history_file = os.path.join(self.history_dir, f"{user_id}.json")
-        
+
         if not os.path.exists(history_file):
             return []
-            
+
         try:
-            with open(history_file, "r", encoding="utf-8") as f:
-                # 获取读取锁
-                fcntl.flock(f, fcntl.LOCK_SH)
-                history = json.load(f)
-                fcntl.flock(f, fcntl.LOCK_UN)
-                
+            # 使用跨平台文件锁
+            lock_file = history_file + ".lock"
+            lock = FileLock(lock_file, timeout=10)
+
+            with lock:
+                with open(history_file, "r", encoding="utf-8") as f:
+                    history = json.load(f)
+
             # 返回最近的n条记录
             return history[-limit:][::-1]
 
