@@ -13,6 +13,10 @@ metadata:
     zh_Hans: OracleLang 易经算卦
   icon: assets/icon.svg
 spec:
+  components:
+    event_listener:
+      - default
+
   config:
     - name: daily_max
       type: integer
@@ -153,8 +157,6 @@ spec:
         zh_Hans: 启用调试输出
       default: false
       required: false
-  
-  components: {}
 
 execution:
   python:
