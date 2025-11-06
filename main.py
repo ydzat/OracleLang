@@ -1,10 +1,11 @@
 """
 OracleLang Plugin - I Ching Divination Plugin for LangBot
-Version: 2.0.1
+Version: 2.0.2
 Author: ydzat
 """
 import os
 import pathlib
+import logging
 from typing import Dict, Any
 
 from langbot_plugin.api.definition.plugin import BasePlugin
@@ -16,6 +17,9 @@ from src.glyphs import HexagramRenderer
 from src.history import HistoryManager
 from src.limit import UsageLimit
 from src.config_validator import validate_config
+
+# Setup logger
+logger = logging.getLogger(__name__)
 
 
 class OracleLangPlugin(BasePlugin):
@@ -35,7 +39,7 @@ class OracleLangPlugin(BasePlugin):
         """Initialize the plugin"""
         await super().initialize()
 
-        self.ap.logger.info("OracleLang plugin initializing...")
+        logger.info("OracleLang plugin initializing...")
 
         # Get plugin directory
         plugin_dir = pathlib.Path(__file__).parent.absolute()
@@ -72,32 +76,32 @@ class OracleLangPlugin(BasePlugin):
         }
 
         # Validate configuration
-        self.ap.logger.info("Validating plugin configuration...")
-        is_valid, errors, warnings = validate_config(self.plugin_config, self.ap.logger)
+        logger.info("Validating plugin configuration...")
+        is_valid, errors, warnings = validate_config(self.plugin_config, logger)
 
         if not is_valid:
             error_msg = "Configuration validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
-            self.ap.logger.error(error_msg)
+            logger.error(error_msg)
             raise ValueError(error_msg)
 
         if warnings:
-            self.ap.logger.warning(f"Configuration has {len(warnings)} warning(s)")
+            logger.warning(f"Configuration has {len(warnings)} warning(s)")
 
-        self.ap.logger.info("Configuration validation passed")
+        logger.info("Configuration validation passed")
 
         # Initialize core modules with logger
-        self.calculator = HexagramCalculator(logger=self.ap.logger)
-        self.interpreter = HexagramInterpreter(self.plugin_config, plugin_dir, logger=self.ap.logger)
-        self.renderer = HexagramRenderer(logger=self.ap.logger)
-        self.history = HistoryManager(os.path.join(plugin_dir, "data/history"), logger=self.ap.logger)
-        self.limit = UsageLimit(self.plugin_config, os.path.join(plugin_dir, "data/limits"), logger=self.ap.logger)
+        self.calculator = HexagramCalculator(logger=logger)
+        self.interpreter = HexagramInterpreter(self.plugin_config, plugin_dir, logger=logger)
+        self.renderer = HexagramRenderer(logger=logger)
+        self.history = HistoryManager(os.path.join(plugin_dir, "data/history"), logger=logger)
+        self.limit = UsageLimit(self.plugin_config, os.path.join(plugin_dir, "data/limits"), logger=logger)
 
         # Load hexagram data
-        self.ap.logger.info("Loading hexagram data...")
+        logger.info("Loading hexagram data...")
         await self.interpreter.load_data()
-        self.ap.logger.info("Hexagram data loaded successfully")
+        logger.info("Hexagram data loaded successfully")
 
-        self.ap.logger.info("OracleLang plugin initialized successfully")
+        logger.info("OracleLang plugin initialized successfully")
 
     async def process_divination_message(self, msg: str, sender_id: str) -> str:
         """
@@ -149,7 +153,7 @@ class OracleLangPlugin(BasePlugin):
 
         # Generate hexagram
         try:
-            self.ap.logger.info(f"User {sender_id} using method {method} for divination, params: {params}, question: {question}")
+            logger.info(f"User {sender_id} using method {method} for divination, params: {params}, question: {question}")
 
             hexagram_data = await self.calculator.calculate(
                 method=method,
@@ -196,7 +200,7 @@ class OracleLangPlugin(BasePlugin):
             return result_msg
 
         except Exception as e:
-            self.ap.logger.error(f"Divination error: {str(e)}", exc_info=True)
+            logger.error(f"Divination error: {str(e)}", exc_info=True)
             return f"算卦过程出现错误: {str(e)}\n请稍后再试或联系管理员。"
 
     def _parse_command(self, cmd_args: str) -> tuple:
