@@ -67,7 +67,8 @@ class OracleLangPlugin(BasePlugin):
                 "language": "zh"
             },
             "admin_users": config_data.get("admin_users", []),
-            "debug": config_data.get("debug", False)
+            "debug": config_data.get("debug", False),
+            "timezone": config_data.get("timezone", "Asia/Shanghai")
         }
 
         # Validate configuration
