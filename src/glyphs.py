@@ -1,15 +1,21 @@
+import logging
 from typing import List, Dict, Any, Optional
 from .data_constants import TRIGRAMS, UNICODE_SYMBOLS, HEXAGRAM_UNICODE
+
 
 class HexagramRenderer:
     """
     卦象图形渲染器，用于生成卦象的文字图示
     """
-    
+
     # 从常量模块导入数据
     UNICODE_SYMBOLS = UNICODE_SYMBOLS
     HEXAGRAM_UNICODE = HEXAGRAM_UNICODE
     TRIGRAMS = TRIGRAMS
+
+    def __init__(self, logger: Optional[logging.Logger] = None):
+        """Initialize renderer with optional logger"""
+        self.logger = logger or logging.getLogger(__name__)
     
     def render_hexagram(self, original: List[int], changed: List[int], 
                         moving: List[int], style: str = "detailed") -> str:

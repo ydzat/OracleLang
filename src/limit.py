@@ -2,31 +2,35 @@ import os
 import json
 import time
 import fcntl
+import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
+
 
 class UsageLimit:
     """
     用户使用限制类，管理每日算卦次数限制
     """
-    
-    def __init__(self, config: Dict, limit_dir: str = None):
+
+    def __init__(self, config: Dict, limit_dir: str = None, logger: Optional[logging.Logger] = None):
         self.config = config
-        
+        self.logger = logger or logging.getLogger(__name__)
+
         if limit_dir is None:
             base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             self.limit_dir = os.path.join(base_dir, "data/limits")
         else:
             self.limit_dir = limit_dir
-            
+
         self.limit_file = os.path.join(self.limit_dir, "daily_usage.json")
-        
+
         # 确保目录存在
         os.makedirs(self.limit_dir, exist_ok=True)
-        
+        self.logger.debug(f"UsageLimit initialized with directory: {self.limit_dir}")
+
         # 加载使用数据
         self.usage_data = self._load_usage_data()
-        
+
         # 检查是否需要重置
         self._check_reset()
         
@@ -57,7 +61,7 @@ class UsageLimit:
                     data["users"] = unique_users
                     return data
             except Exception as e:
-                print(f"加载使用数据失败: {str(e)}")
+                self.logger.error(f"Failed to load usage data: {str(e)}", exc_info=True)
                 return {"last_reset": self._get_current_date(), "users": {}}
         else:
             return {"last_reset": self._get_current_date(), "users": {}}
@@ -82,9 +86,9 @@ class UsageLimit:
                 json.dump(self.usage_data, f, ensure_ascii=False, indent=2)
                 # 释放文件锁
                 fcntl.flock(f, fcntl.LOCK_UN)
-                
+
         except Exception as e:
-            print(f"保存使用数据失败: {str(e)}")
+            self.logger.error(f"Failed to save usage data: {str(e)}", exc_info=True)
             
     def _get_current_date(self) -> str:
         """获取当前日期字符串（东八区时间）"""

@@ -68,12 +68,12 @@ class OracleLangPlugin(BasePlugin):
             "debug": config_data.get("debug", False)
         }
 
-        # Initialize core modules
-        self.calculator = HexagramCalculator()
-        self.interpreter = HexagramInterpreter(self.plugin_config, plugin_dir)
-        self.renderer = HexagramRenderer()
-        self.history = HistoryManager(os.path.join(plugin_dir, "data/history"))
-        self.limit = UsageLimit(self.plugin_config, os.path.join(plugin_dir, "data/limits"))
+        # Initialize core modules with logger
+        self.calculator = HexagramCalculator(logger=self.ap.logger)
+        self.interpreter = HexagramInterpreter(self.plugin_config, plugin_dir, logger=self.ap.logger)
+        self.renderer = HexagramRenderer(logger=self.ap.logger)
+        self.history = HistoryManager(os.path.join(plugin_dir, "data/history"), logger=self.ap.logger)
+        self.limit = UsageLimit(self.plugin_config, os.path.join(plugin_dir, "data/limits"), logger=self.ap.logger)
 
         # Load hexagram data
         self.ap.logger.info("Loading hexagram data...")
