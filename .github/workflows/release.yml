@@ -42,13 +42,13 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           PACKAGE_NAME="OracleLang-v${VERSION}.lbpkg"
-          
+
           # Create dist directory if it doesn't exist
           mkdir -p dist
-          
+
           # Remove old packages
           rm -f dist/*.lbpkg dist/*.md5
-          
+
           # Create the package
           zip -r "dist/${PACKAGE_NAME}" . \
             -x "*.git*" \
@@ -63,11 +63,12 @@ jobs:
             -x "data/limits/*.json" \
             -x ".github/*" \
             -x ".env*"
-          
+
           # Generate MD5 checksum
           cd dist
           md5sum "${PACKAGE_NAME}" > "${PACKAGE_NAME}.md5"
-          
+          cd ..
+
           echo "Package created: dist/${PACKAGE_NAME}"
           ls -lh "dist/${PACKAGE_NAME}"
           cat "dist/${PACKAGE_NAME}.md5"
