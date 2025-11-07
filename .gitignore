@@ -130,6 +130,20 @@ dmypy.json
 
 # 项目特定文件
 config.yaml
-data/history/
-data/limits/
-Design.md
+data/history/*.json
+data/limits/*.json
+
+# Build artifacts
+dist/*.lbpkg
+dist/*.md5
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

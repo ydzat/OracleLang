@@ -11,9 +11,10 @@ class HexagramInterpreter:
     卦象解释器，负责提供卦象的名称、爻辞、解释等内容
     """
 
-    def __init__(self, config: Dict, base_dir=None, logger: Optional[logging.Logger] = None):
+    def __init__(self, config: Dict, base_dir=None, plugin=None, logger: Optional[logging.Logger] = None):
         self.config = config
         self.base_dir = base_dir if base_dir else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.plugin = plugin  # Plugin instance for accessing LangBot APIs
         self.hexagrams_data = {}  # 卦象静态数据
         self.data_loaded = False
         self.logger = logger or logging.getLogger(__name__)
@@ -229,30 +230,45 @@ class HexagramInterpreter:
     async def _get_llm_interpretation(self, question: str, original_name: str,
                                     changed_name: Optional[str], moving_lines: List[str]) -> Dict[str, str]:
         """
-        使用大语言模型生成更个性化的卦象解释
+        使用 LangBot 的 LLM API 生成更个性化的卦象解释
         """
-        if not self.config["llm"]["enabled"] or not self.config["llm"]["api_key"]:
+        if not self.config["llm"]["enabled"]:
+            return {}
+
+        if not self.plugin:
+            self.logger.warning("Plugin instance not available, cannot call LLM")
             return {}
 
         try:
+            # 获取可用的 LLM 模型列表
+            # 注意：get_llm_models() 实际返回 list[dict]，每个 dict 包含模型信息（包括 uuid 字段）
+            llm_models = await self.plugin.get_llm_models()
+            if not llm_models:
+                self.logger.warning("No LLM models configured in LangBot")
+                return {}
+
+            # 使用第一个可用模型的 UUID
+            model_uuid = llm_models[0]['uuid']
+            self.logger.debug(f"Using LLM model: {model_uuid}")
+
             # 构建提示词
             prompt = self._build_llm_prompt(question, original_name, changed_name, moving_lines)
 
-            api_type = self.config["llm"]["api_type"]
+            # 导入 LangBot 消息类型
+            from langbot_plugin.api.entities.builtin.provider import message as provider_message
 
-            # 调用对应的API获取响应文本
-            if api_type == "openai":
-                response_text = await self._call_openai(prompt)
-            elif api_type == "deepseek":
-                response_text = await self._call_deepseek(prompt)
-            elif api_type == "qianfan":
-                response_text = await self._call_qianfan(prompt)
-            elif api_type == "azure":
-                response_text = await self._call_azure(prompt)
-            else:
-                raise ValueError(f"不支持的API类型: {api_type}")
+            # 调用 LangBot LLM API
+            llm_message = await self.plugin.invoke_llm(
+                llm_model_uuid=model_uuid,
+                messages=[provider_message.Message(role="user", content=prompt)],
+                funcs=[],
+                extra_args={},
+            )
 
-            # 统一解析响应
+            # 获取响应文本
+            response_text = llm_message.content
+
+            # 解析响应
             return self._parse_llm_response(response_text)
 
         except Exception as e:
@@ -425,129 +441,4 @@ class HexagramInterpreter:
             "advice": advice or "暂无具体建议"
         }
 
-    async def _call_openai(self, prompt: str) -> str:
-        """调用OpenAI API，返回原始响应文本"""
-        import aiohttp
 
-        api_key = self.config["llm"]["api_key"]
-        api_base = self.config["llm"].get("api_base", "https://api.openai.com/v1")
-        model = self.config["llm"]["model"]
-
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"{api_base}/chat/completions",
-                json={
-                    "model": model,
-                    "messages": [
-                        {"role": "user", "content": prompt}
-                    ],
-                    "temperature": 0.7
-                },
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                },
-                timeout=aiohttp.ClientTimeout(total=30)
-            ) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    content = data["choices"][0]["message"]["content"]
-                    self.logger.debug(f"OpenAI API response: {content[:100]}...")
-                    return content
-                else:
-                    error_text = await response.text()
-                    raise Exception(f"OpenAI API调用失败: {response.status} - {error_text}")
-                    
-    async def _call_qianfan(self, prompt: str) -> str:
-        """调用百度千帆API，返回原始响应文本"""
-        from qianfan import ChatCompletion
-
-        api_key = self.config["llm"]["api_key"]
-        api_secret = self.config["llm"].get("api_secret", "")
-        model = self.config["llm"]["model"]
-
-        # 初始化客户端
-        chat = ChatCompletion(api_key=api_key, secret_key=api_secret)
-
-        # 调用API
-        response = await chat.do(
-            model=model,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-
-        content = response["result"]
-        self.logger.debug(f"Qianfan API response: {content[:100]}...")
-        return content
-
-    async def _call_azure(self, prompt: str) -> str:
-        """调用Azure OpenAI API，返回原始响应文本"""
-        import aiohttp
-
-        api_key = self.config["llm"]["api_key"]
-        api_base = self.config["llm"]["api_base"]
-        model = self.config["llm"]["model"]
-
-        # Azure需要完整的API基础URL
-        if not api_base or not api_base.startswith("https://"):
-            raise ValueError("Azure OpenAI需要完整的API基础URL")
-
-        deployment_name = model
-
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"{api_base}/openai/deployments/{deployment_name}/chat/completions?api-version=2023-05-15",
-                json={
-                    "messages": [
-                        {"role": "user", "content": prompt}
-                    ],
-                    "temperature": 0.7
-                },
-                headers={
-                    "api-key": api_key,
-                    "Content-Type": "application/json"
-                },
-                timeout=aiohttp.ClientTimeout(total=30)
-            ) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    content = data["choices"][0]["message"]["content"]
-                    self.logger.debug(f"Azure API response: {content[:100]}...")
-                    return content
-                else:
-                    error_text = await response.text()
-                    raise Exception(f"Azure API调用失败: {response.status} - {error_text}")
-                    
-    async def _call_deepseek(self, prompt: str) -> str:
-        """调用DeepSeek API（与OpenAI API兼容），返回原始响应文本"""
-        import aiohttp
-
-        api_key = self.config["llm"]["api_key"]
-        api_base = self.config["llm"].get("api_base", "https://api.deepseek.com/v1")
-        model = self.config["llm"]["model"]
-
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"{api_base}/chat/completions",
-                json={
-                    "model": model,
-                    "messages": [
-                        {"role": "user", "content": prompt}
-                    ],
-                    "temperature": 0.7
-                },
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json"
-                },
-                timeout=aiohttp.ClientTimeout(total=30)
-            ) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    content = data["choices"][0]["message"]["content"]
-                    self.logger.debug(f"DeepSeek API response: {content[:100]}...")
-                    return content
-                else:
-                    error_text = await response.text()
-                    raise Exception(f"DeepSeek API调用失败: {response.status} - {error_text}")

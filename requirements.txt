@@ -1,5 +1,2 @@
-# HTTP client for async API calls
-aiohttp>=3.9.0,<4.0.0
-
 # Cross-platform file locking
 filelock>=3.12.0,<4.0.0

@@ -82,50 +82,12 @@ class ConfigValidator:
         # 验证 enabled
         enabled = llm_config.get("enabled")
         if enabled is None:
-            self.warnings.append("llm.enabled 未设置，将使用默认值 False")
+            self.warnings.append("llm.enabled 未设置，将使用默认值 True")
         elif not isinstance(enabled, bool):
             self.errors.append(f"llm.enabled 必须是布尔值，当前类型: {type(enabled).__name__}")
-        
-        # 如果启用了 LLM，验证相关配置
-        if enabled:
-            # 验证 api_type
-            api_type = llm_config.get("api_type")
-            valid_api_types = ["openai", "deepseek", "qianfan", "azure"]
-            
-            if not api_type:
-                self.errors.append("llm.enabled 为 True 时，llm.api_type 不能为空")
-            elif api_type not in valid_api_types:
-                self.errors.append(
-                    f"llm.api_type 必须是以下之一: {', '.join(valid_api_types)}，当前值: {api_type}"
-                )
-            
-            # 验证 api_key
-            api_key = llm_config.get("api_key")
-            if not api_key or not isinstance(api_key, str) or not api_key.strip():
-                self.errors.append("llm.enabled 为 True 时，llm.api_key 不能为空")
-            elif len(api_key) < 10:
-                self.warnings.append(f"llm.api_key 长度过短 ({len(api_key)} 字符)，可能无效")
-            
-            # 验证 api_base（Azure 必需）
-            api_base = llm_config.get("api_base", "")
-            if api_type == "azure":
-                if not api_base or not isinstance(api_base, str) or not api_base.strip():
-                    self.errors.append("使用 Azure OpenAI 时，llm.api_base 不能为空")
-                elif not api_base.startswith(("http://", "https://")):
-                    self.errors.append(f"llm.api_base 必须是有效的 URL，当前值: {api_base}")
-            elif api_base and not api_base.startswith(("http://", "https://")):
-                self.warnings.append(f"llm.api_base 可能不是有效的 URL: {api_base}")
-            
-            # 验证 model
-            model = llm_config.get("model")
-            if not model or not isinstance(model, str) or not model.strip():
-                self.errors.append("llm.enabled 为 True 时，llm.model 不能为空")
-            
-            # 验证 api_secret（千帆需要）
-            if api_type == "qianfan":
-                api_secret = llm_config.get("api_secret", "")
-                if not api_secret or not isinstance(api_secret, str) or not api_secret.strip():
-                    self.warnings.append("使用百度千帆时，建议设置 llm.api_secret")
+
+        # LangBot 4.0 使用内置 LLM API，无需验证 API 密钥等配置
+        # 插件会自动使用 LangBot 中配置的第一个可用模型
     
     def _validate_display_config(self, display_config: Dict[str, Any]):
         """验证显示配置"""

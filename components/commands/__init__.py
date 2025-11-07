@@ -1,2 +1,0 @@
-# OracleLang Command Components
-

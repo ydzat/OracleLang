@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Command
 metadata:
-  name: 算卦
+  name: suangua
   label:
     en_US: I Ching Divination
     zh_Hans: 易经算卦

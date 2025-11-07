@@ -1,0 +1,106 @@
+name: Build and Release Plugin
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 2.1.0)'
+        required: true
+        type: string
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Determine version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+      
+      - name: Update manifest version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          sed -i "s/^version: .*/version: \"$VERSION\"/" manifest.yaml
+          echo "Updated manifest.yaml version to $VERSION"
+      
+      - name: Build plugin package
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          PACKAGE_NAME="OracleLang-v${VERSION}.lbpkg"
+          
+          # Create dist directory if it doesn't exist
+          mkdir -p dist
+          
+          # Remove old packages
+          rm -f dist/*.lbpkg dist/*.md5
+          
+          # Create the package
+          zip -r "dist/${PACKAGE_NAME}" . \
+            -x "*.git*" \
+            -x "*.md" \
+            -x "dist/*" \
+            -x "*.py~" \
+            -x "__pycache__/*" \
+            -x "src/__pycache__/*" \
+            -x "components/__pycache__/*" \
+            -x "components/commands/__pycache__/*" \
+            -x "data/history/*.json" \
+            -x "data/limits/*.json" \
+            -x ".github/*" \
+            -x ".env*"
+          
+          # Generate MD5 checksum
+          cd dist
+          md5sum "${PACKAGE_NAME}" > "${PACKAGE_NAME}.md5"
+          
+          echo "Package created: dist/${PACKAGE_NAME}"
+          ls -lh "dist/${PACKAGE_NAME}"
+          cat "dist/${PACKAGE_NAME}.md5"
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body: |
+            ## OracleLang v${{ steps.version.outputs.version }}
+            
+            易经算卦插件 - LangBot 4.0
+            
+            ### 安装方法
+            
+            1. 下载 `OracleLang-v${{ steps.version.outputs.version }}.lbpkg`
+            2. 在 LangBot WebUI 的插件页面上传安装
+            
+            或者直接在 WebUI 中从 GitHub 安装：`https://github.com/ydzat/OracleLang`
+            
+            ### 校验和
+            
+            ```
+            $(cat dist/OracleLang-v${{ steps.version.outputs.version }}.lbpkg.md5)
+            ```
+            
+            详细更新日志请查看 [README.md](https://github.com/ydzat/OracleLang/blob/master/README.md)
+          files: |
+            dist/OracleLang-v${{ steps.version.outputs.version }}.lbpkg
+            dist/OracleLang-v${{ steps.version.outputs.version }}.lbpkg.md5
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

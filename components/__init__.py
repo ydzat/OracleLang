@@ -1,2 +1,0 @@
-# OracleLang Plugin Components
-
