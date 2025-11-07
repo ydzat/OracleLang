@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Command
+metadata:
+  name: 算卦
+  label:
+    en_US: I Ching Divination
+    zh_Hans: 易经算卦
+  description:
+    en_US: 'I Ching divination command - fortune telling based on ancient Chinese wisdom'
+    zh_Hans: '易经算卦命令 - 基于中国古代智慧的占卜'
+spec:
+  config: []
+execution:
+  python:
+    path: suangua.py
+    attr: SuanguaCommand
+

@@ -1,11 +1,5 @@
-# LangBot plugin framework
-langbot_plugin>=4.0.0,<5.0.0
-
 # HTTP client for async API calls
 aiohttp>=3.9.0,<4.0.0
-
-# Baidu Qianfan LLM API (optional, only needed if using Qianfan)
-qianfan>=0.3.0,<1.0.0
 
 # Cross-platform file locking
 filelock>=3.12.0,<4.0.0

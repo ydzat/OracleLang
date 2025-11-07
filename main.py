@@ -37,8 +37,6 @@ class OracleLangPlugin(BasePlugin):
 
     async def initialize(self):
         """Initialize the plugin"""
-        await super().initialize()
-
         logger.info("OracleLang plugin initializing...")
 
         # Get plugin directory
