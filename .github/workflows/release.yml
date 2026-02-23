@@ -4,102 +4,153 @@ on:
   push:
     tags:
       - 'v*.*.*'
+    branches:
+      - master
+      - main
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to release (e.g., 2.1.0)'
+        description: 'Version to release (e.g., 3.0.0)'
         required: true
         type: string
 
 jobs:
-  build-and-release:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      should_release: ${{ steps.version.outputs.should_release }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Determine version
+
+      - name: Determine version and release flag
         id: version
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             VERSION="${{ github.event.inputs.version }}"
-          else
+            SHOULD_RELEASE="true"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             VERSION="${GITHUB_REF#refs/tags/v}"
+            SHOULD_RELEASE="true"
+          else
+            # For branch pushes, read version from manifest
+            VERSION=$(grep -E "^  version:" manifest.yaml | sed 's/.*version: *["'\'']*\([^"'\'']*\)["'\'']*$/\1/')
+            SHOULD_RELEASE="false"
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Version: $VERSION"
-      
+          echo "should_release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION, Should Release: $SHOULD_RELEASE"
+
       - name: Update manifest version
+        if: steps.version.outputs.should_release == 'true'
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          sed -i "s/^version: .*/version: \"$VERSION\"/" manifest.yaml
+          sed -i "s/^  version: .*/  version: $VERSION/" manifest.yaml
           echo "Updated manifest.yaml version to $VERSION"
-      
+
       - name: Build plugin package
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           PACKAGE_NAME="OracleLang-v${VERSION}.lbpkg"
 
-          # Create dist directory if it doesn't exist
           mkdir -p dist
-
-          # Remove old packages
           rm -f dist/*.lbpkg dist/*.md5
 
-          # Create the package
+          # Create the package (exclude unnecessary files)
           zip -r "dist/${PACKAGE_NAME}" . \
             -x "*.git*" \
-            -x "*.md" \
             -x "dist/*" \
             -x "*.py~" \
+            -x "*.pyc" \
             -x "__pycache__/*" \
-            -x "src/__pycache__/*" \
-            -x "components/__pycache__/*" \
-            -x "components/commands/__pycache__/*" \
+            -x "*/__pycache__/*" \
+            -x "*/*/__pycache__/*" \
             -x "data/history/*.json" \
+            -x "data/history/*.lock" \
             -x "data/limits/*.json" \
+            -x "data/limits/*.lock" \
             -x ".github/*" \
-            -x ".env*"
+            -x ".env*" \
+            -x ".venv/*" \
+            -x "*.lbpkg" \
+            -x ".coverage" \
+            -x ".pytest_cache/*"
 
-          # Generate MD5 checksum
+          # Generate checksums
           cd dist
           md5sum "${PACKAGE_NAME}" > "${PACKAGE_NAME}.md5"
+          sha256sum "${PACKAGE_NAME}" > "${PACKAGE_NAME}.sha256"
           cd ..
 
           echo "Package created: dist/${PACKAGE_NAME}"
           ls -lh "dist/${PACKAGE_NAME}"
-          cat "dist/${PACKAGE_NAME}.md5"
-      
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+          echo "MD5: $(cat dist/${PACKAGE_NAME}.md5)"
+          echo "SHA256: $(cat dist/${PACKAGE_NAME}.sha256)"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }}
+          name: plugin-package
+          path: |
+            dist/*.lbpkg
+            dist/*.md5
+            dist/*.sha256
+          retention-days: 30
+
+  release:
+    needs: build
+    if: needs.build.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: plugin-package
+          path: dist
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.build.outputs.version }}
+          name: OracleLang v${{ needs.build.outputs.version }}
           body: |
-            ## OracleLang v${{ steps.version.outputs.version }}
-            
-            易经算卦插件 - LangBot 4.0
-            
+            ## OracleLang v${{ needs.build.outputs.version }}
+
+            六爻算卦插件 - 使用传统三钱法起卦
+
+            ### 功能特性
+
+            - 传统三钱法起卦（模拟6次投掷3枚硬币）
+            - 完整的64卦解释
+            - 可选 LLM 增强解读
+            - 每日使用限额管理
+            - 历史记录查询
+
             ### 安装方法
-            
-            1. 下载 `OracleLang-v${{ steps.version.outputs.version }}.lbpkg`
-            2. 在 LangBot WebUI 的插件页面上传安装
-            
-            或者直接在 WebUI 中从 GitHub 安装：`https://github.com/ydzat/OracleLang`
-            
+
+            **方法一：从 GitHub 安装（推荐）**
+            1. 打开 LangBot WebUI → 插件
+            2. 点击「从 GitHub 安装」
+            3. 输入：`https://github.com/ydzat/OracleLang`
+            4. 选择此版本并安装
+
+            **方法二：手动上传**
+            1. 下载 `OracleLang-v${{ needs.build.outputs.version }}.lbpkg`
+            2. 在 LangBot WebUI 插件页面上传
+
             ### 校验和
-            
-            ```
-            $(cat dist/OracleLang-v${{ steps.version.outputs.version }}.lbpkg.md5)
-            ```
-            
-            详细更新日志请查看 [README.md](https://github.com/ydzat/OracleLang/blob/master/README.md)
+
+            - **MD5:** `$(cat dist/OracleLang-v${{ needs.build.outputs.version }}.lbpkg.md5 | cut -d' ' -f1)`
+            - **SHA256:** `$(cat dist/OracleLang-v${{ needs.build.outputs.version }}.lbpkg.sha256 | cut -d' ' -f1)`
           files: |
-            dist/OracleLang-v${{ steps.version.outputs.version }}.lbpkg
-            dist/OracleLang-v${{ steps.version.outputs.version }}.lbpkg.md5
+            dist/OracleLang-v${{ needs.build.outputs.version }}.lbpkg
+            dist/OracleLang-v${{ needs.build.outputs.version }}.lbpkg.md5
+            dist/OracleLang-v${{ needs.build.outputs.version }}.lbpkg.sha256
           draft: false
           prerelease: false
         env:

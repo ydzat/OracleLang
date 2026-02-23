@@ -131,11 +131,15 @@ dmypy.json
 # 项目特定文件
 config.yaml
 data/history/*.json
+data/history/*.lock
 data/limits/*.json
+data/limits/*.lock
+data/static/*.lock
 
 # Build artifacts
 dist/*.lbpkg
 dist/*.md5
+dist/*.sha256
 
 # IDE
 .vscode/
