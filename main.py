@@ -1,6 +1,7 @@
 """
-OracleLang Plugin - I Ching Divination Plugin for LangBot 4.0
-Version: 2.0.3
+OracleLang Plugin - Liu Yao Divination Plugin for LangBot 4.0
+Uses traditional San Qian Fa (coin toss method) for divination
+Version: 3.0.0
 Author: ydzat
 """
 from __future__ import annotations
@@ -108,14 +109,18 @@ class OracleLangPlugin(BasePlugin):
 
     def _get_help_text(self) -> str:
         """Get help text"""
-        return """易经算卦使用说明：
+        return """六爻算卦使用说明：
 
 基础用法：
-  !suangua <问题>  - 使用时间起卦法进行占卜
+  !suangua <问题>  - 使用三钱法起卦占卜
 
-高级用法：
-  !suangua 时间 <问题>  - 明确使用时间起卦法
-  !suangua 数字 <上卦数> <下卦数> <问题>  - 使用数字起卦法
+起卦原理（三钱法）：
+  模拟投掷3枚硬币，共6次（对应六爻）
+  ● 正面  ○ 反面
+  3正(●●●) → 老阳(9) → 阳爻，动爻
+  2正1反(●●○) → 少阳(7) → 阳爻
+  1正2反(●○○) → 少阴(8) → 阴爻
+  3反(○○○) → 老阴(6) → 阴爻，动爻
 
 查询命令：
   !suangua help  - 显示此帮助信息
@@ -128,48 +133,12 @@ class OracleLangPlugin(BasePlugin):
 
 示例：
   !suangua 我今天的工作运势如何？
-  !suangua 时间 这次项目能否成功？
-  !suangua 数字 123 456 我的感情运势如何？
+  !suangua 这次项目能否成功？
 """
 
-    async def _handle_admin_commands(self, sender_id: str, cmd_args: str) -> str:
-        """Handle admin commands"""
-        parts = cmd_args.split(maxsplit=2)
-        cmd = parts[0]
-
-        if cmd == "重置" and len(parts) >= 2:
-            target_user = parts[1]
-            self.limit.reset_user(target_user)
-            return f"✅ 已重置用户 {target_user} 的今日使用次数"
-
-        elif cmd == "统计":
-            stats = self.limit.get_usage_statistics()
-            return f"""📊 系统使用统计：
-总用户数：{stats['total_users']}
-总使用次数：{stats['total_usage']}
-上次重置：{stats['last_reset']}
-"""
-
-        return "❌ 未知的管理命令。可用命令：重置 <用户ID>、统计"
-
-    def _parse_command(self, cmd_args: str) -> tuple:
-        """Parse command arguments"""
-        import re
-
-        # Check for number method: 数字 <num1> <num2> <question>
-        number_match = re.match(r'数字\s+(\d+)\s+(\d+)\s+(.*)', cmd_args)
-        if number_match:
-            num1, num2, question = number_match.groups()
-            return ("number", {"num1": int(num1), "num2": int(num2)}, question.strip())
-
-        # Check for time method: 时间 <question>
-        time_match = re.match(r'时间\s+(.*)', cmd_args)
-        if time_match:
-            question = time_match.group(1).strip()
-            return ("time", {}, question)
-
-        # Default: time method with question
-        return ("time", {}, cmd_args.strip())
+    def _parse_question(self, cmd_args: str) -> str:
+        """Parse and return the question from command arguments"""
+        return cmd_args.strip()
 
     def _get_history_text(self, sender_id: str) -> str:
         """Get user's divination history"""
@@ -201,10 +170,20 @@ class OracleLangPlugin(BasePlugin):
 
         response = [
             f"📝 问题: {question}" if question else "🔮 随缘一卦",
+        ]
+
+        # 显示投掷记录
+        if "coin_records" in hexagram_data:
+            response.append("\n🎲 起卦过程:")
+            for record in hexagram_data["coin_records"]:
+                moving_mark = " ⚡" if record["is_moving"] else ""
+                response.append(f"  {record['yao']}: {record['coins']} → {record['type']}{moving_mark}")
+
+        response.extend([
             f"\n{visual}",
             f"\n📌 卦象: {original_name} {'→ ' + changed_name if has_moving else ''}",
             f"\n✨ 卦辞: {interpretation['original']['gua_ci']}",
-        ]
+        ])
 
         # Moving lines interpretation
         if has_moving:
@@ -222,44 +201,19 @@ class OracleLangPlugin(BasePlugin):
 
         return "\n".join(response)
 
-    async def process_divination(self, question: str, sender_id: str, method: str = "time", params: dict = None) -> str:
+    async def process_divination(self, question: str, sender_id: str) -> str:
         """
-        Process divination request
+        Process divination request using coin toss method
 
         Args:
             question: The question to divine
             sender_id: User ID
-            method: Divination method ('time', 'text', 'number', 'random')
-            params: Method parameters
 
         Returns:
             Divination result text
         """
-        if params is None:
-            params = {}
-
-        # Map old method names to new ones
-        method_map = {
-            "time": "时间",
-            "number": "数字",
-            "text": "text",
-            "random": "random"
-        }
-
-        calc_method = method_map.get(method, "text")
-
-        # Prepare input text based on method
-        if calc_method == "数字":
-            input_text = f"{params.get('num1', 0)} {params.get('num2', 0)}"
-        else:
-            input_text = question
-
-        # Calculate hexagram using the unified calculate method
-        hexagram_data = await self.calculator.calculate(
-            method=calc_method,
-            input_text=input_text,
-            user_id=sender_id
-        )
+        # Calculate hexagram using coin toss method
+        hexagram_data = await self.calculator.calculate(user_id=sender_id)
 
         # Generate hexagram visual
         style = self.plugin_config.get("display", {}).get("style", "detailed")

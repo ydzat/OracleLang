@@ -3,11 +3,11 @@ kind: Command
 metadata:
   name: suangua
   label:
-    en_US: I Ching Divination
-    zh_Hans: 易经算卦
+    en_US: Liu Yao Divination
+    zh_Hans: 六爻算卦
   description:
-    en_US: 'I Ching divination command - fortune telling based on ancient Chinese wisdom'
-    zh_Hans: '易经算卦命令 - 基于中国古代智慧的占卜'
+    en_US: 'Liu Yao divination using traditional coin toss method (San Qian Fa)'
+    zh_Hans: '六爻算卦 - 使用传统三钱法起卦占卜'
 spec:
   config: []
 execution:

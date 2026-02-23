@@ -48,7 +48,7 @@ class SuanguaCommand(Command):
         # Default handler for divination (root command with question as parameters)
         @self.subcommand(
             name="",  # Empty string means default handler
-            help="易经算卦 - I Ching Divination",
+            help="六爻算卦 - 三钱法起卦",
             usage="suangua <问题>",
             aliases=[],
         )
@@ -65,18 +65,9 @@ class SuanguaCommand(Command):
                 sender_id = str(context.session.launcher_id)
 
                 # All parameters are the question
-                args_text = " ".join(context.crt_params) if context.crt_params else ""
+                question = " ".join(context.crt_params) if context.crt_params else ""
 
-                if not args_text.strip():
-                    yield CommandReturn(
-                        text="请输入您的问题。使用 !suangua help 查看使用说明。"
-                    )
-                    return
-
-                # Parse command arguments
-                method, params, question = self.plugin._parse_command(args_text)
-
-                if not question:
+                if not question.strip():
                     yield CommandReturn(
                         text="请输入您的问题。使用 !suangua help 查看使用说明。"
                     )
@@ -90,12 +81,10 @@ class SuanguaCommand(Command):
                     )
                     return
 
-                # Process divination
+                # Process divination using coin toss method
                 result = await self.plugin.process_divination(
-                    question=question,
-                    sender_id=sender_id,
-                    method=method,
-                    params=params
+                    question=question.strip(),
+                    sender_id=sender_id
                 )
 
                 yield CommandReturn(text=result)
