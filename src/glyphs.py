@@ -68,7 +68,7 @@ class HexagramRenderer:
         original_upper_name = self.TRIGRAMS.get(original_upper, ("？", "未知", ""))[1]
         original_lower_name = self.TRIGRAMS.get(original_lower, ("？", "未知", ""))[1]
         
-        original_name = f"{original_lower_name}{original_upper_name}"
+        original_name = f"{original_upper_name}{original_lower_name}"
         
         # 如果没有变化，只返回原卦名称
         if not has_moving:
@@ -82,7 +82,7 @@ class HexagramRenderer:
             changed_upper_name = self.TRIGRAMS.get(changed_upper, ("？", "未知", ""))[1]
             changed_lower_name = self.TRIGRAMS.get(changed_lower, ("？", "未知", ""))[1]
             
-            changed_name = f"{changed_lower_name}{changed_upper_name}"
+            changed_name = f"{changed_upper_name}{changed_lower_name}"
             
             return f"{original_name} {self.UNICODE_SYMBOLS['arrow']} {changed_name}"
     
@@ -99,8 +99,8 @@ class HexagramRenderer:
         original_upper_info = self.TRIGRAMS.get(original_upper, ("？", "未知", ""))
         original_lower_info = self.TRIGRAMS.get(original_lower, ("？", "未知", ""))
         
-        # 确定卦名
-        original_name = f"{original_lower_info[1]}为{original_lower_info[2]}{original_upper_info[1]}为{original_upper_info[2]}"
+        # 确定卦名（标准格式：上卦在前，下卦在后）
+        original_name = f"{original_upper_info[1]}为{original_upper_info[2]}{original_lower_info[1]}为{original_lower_info[2]}"
         
         # 准备爻的表示
         lines = []
@@ -132,7 +132,7 @@ class HexagramRenderer:
             changed_upper_info = self.TRIGRAMS.get(changed_upper, ("？", "未知", ""))
             changed_lower_info = self.TRIGRAMS.get(changed_lower, ("？", "未知", ""))
             
-            changed_name = f"{changed_lower_info[1]}为{changed_lower_info[2]}{changed_upper_info[1]}为{changed_upper_info[2]}"
+            changed_name = f"{changed_upper_info[1]}为{changed_upper_info[2]}{changed_lower_info[1]}为{changed_lower_info[2]}"
             
             # 在最上面一爻添加原卦名称，在最下面一爻添加变卦名称
             lines[0] += f"  {original_name}（原卦）"

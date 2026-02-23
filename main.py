@@ -1,7 +1,7 @@
 """
 OracleLang Plugin - Liu Yao Divination Plugin for LangBot 4.0
 Uses traditional San Qian Fa (coin toss method) for divination
-Version: 3.0.0
+Version: 3.1.0
 Author: ydzat
 """
 from __future__ import annotations

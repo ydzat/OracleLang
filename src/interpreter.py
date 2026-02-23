@@ -208,17 +208,96 @@ class HexagramInterpreter:
                    f"变化为{changed_data.get('description', '另一种状态')}。这表示情况正在发生转变。"
     
     def _determine_fortune(self, original_data: Dict, changed_data: Optional[Dict]) -> str:
-        """确定吉凶"""
-        # 简单实现，实际可能需要更复杂的规则
-        if "吉" in original_data.get("gua_ci", ""):
+        """
+        确定吉凶等级
+
+        等级从高到低：大吉、吉、小吉、平、小凶、凶、大凶
+        """
+        gua_ci = original_data.get("gua_ci", "")
+        changed_gua_ci = changed_data.get("gua_ci", "") if changed_data else ""
+
+        # 合并卦辞进行分析
+        combined = gua_ci + changed_gua_ci
+
+        # 大吉：元吉、大吉
+        if "元吉" in combined or "大吉" in combined:
+            return "大吉"
+
+        # 大凶：大凶、终凶
+        if "大凶" in combined or "终凶" in combined:
+            return "大凶"
+
+        # 计算吉凶倾向分数
+        score = 0
+
+        # 吉的关键词
+        if "吉" in combined:
+            score += 2
+        if "亨" in combined:
+            score += 1
+        if "利" in combined:
+            score += 1
+        if "无咎" in combined:
+            score += 1
+
+        # 凶的关键词
+        if "凶" in combined:
+            score -= 2
+        if "厉" in combined:
+            score -= 1
+        if "悔" in combined:
+            score -= 1
+        if "吝" in combined:
+            score -= 1
+        if "不利" in combined:
+            score -= 1
+
+        # 根据分数判断等级
+        if score >= 4:
+            return "大吉"
+        elif score >= 2:
             return "吉"
-        elif changed_data and "吉" in changed_data.get("gua_ci", ""):
+        elif score == 1:
+            return "小吉"
+        elif score == 0:
+            return "平"
+        elif score == -1:
+            return "小凶"
+        elif score >= -3:
+            return "凶"
+        else:
+            return "大凶"
+
+    def _normalize_fortune(self, fortune_text: str) -> str:
+        """
+        规范化吉凶等级文本
+
+        将各种表述统一为：大吉、吉、小吉、平、小凶、凶、大凶
+        """
+        fortune_text = fortune_text.strip()
+
+        # 直接匹配标准值
+        valid_fortunes = ["大吉", "吉", "小吉", "平", "小凶", "凶", "大凶"]
+        for f in valid_fortunes:
+            if fortune_text == f:
+                return f
+
+        # 模糊匹配
+        if "大吉" in fortune_text or "极吉" in fortune_text:
+            return "大吉"
+        elif "大凶" in fortune_text or "极凶" in fortune_text:
+            return "大凶"
+        elif "小吉" in fortune_text or "微吉" in fortune_text:
+            return "小吉"
+        elif "小凶" in fortune_text or "微凶" in fortune_text:
+            return "小凶"
+        elif "吉" in fortune_text and "凶" not in fortune_text:
             return "吉"
-        elif "凶" in original_data.get("gua_ci", ""):
+        elif "凶" in fortune_text:
             return "凶"
         else:
             return "平"
-            
+
     def _generate_advice(self, original_data: Dict, changed_data: Optional[Dict]) -> str:
         """生成建议"""
         # 简单实现，实际可能需要更复杂的规则
@@ -278,33 +357,49 @@ class HexagramInterpreter:
     def _build_llm_prompt(self, question: str, original_name: str,
                          changed_name: Optional[str], moving_lines: List[str]) -> str:
         """构建LLM提示词，要求返回JSON格式"""
-        prompt = f"""请根据易经卦象为用户提供解读。
+        prompt = f"""你是一位精通易经六爻的专业解卦师。请针对用户的具体问题，结合卦象给出实用、具体的解读。
 
-用户问题：{question}
+【用户问题】
+{question}
 
-卦象信息：
-- 本卦：{original_name}
+【卦象信息】
+本卦：{original_name}
 """
 
         if changed_name and changed_name != original_name:
-            prompt += f"- 变卦：{changed_name}\n"
+            prompt += f"变卦：{changed_name}\n"
 
         if any(moving_lines):
-            prompt += "- 动爻：\n"
+            prompt += "动爻爻辞：\n"
+            yao_names = ["初爻", "二爻", "三爻", "四爻", "五爻", "上爻"]
             for i, line in enumerate(moving_lines):
                 if line:
-                    prompt += f"  {line}\n"
+                    prompt += f"  {yao_names[i]}：{line}\n"
 
         prompt += """
-请以JSON格式返回解读结果，格式如下：
+【解读要求】
+1. overall_meaning：必须直接回答用户的问题，不要泛泛而谈。
+   - 如果问"谁做了某事"，要根据卦象指出可能的人物特征（如亲近之人、同事、陌生人等）
+   - 如果问"是否应该做某事"，要明确给出是/否的倾向
+   - 如果问"何时发生"，要给出时间方面的指引
+   - 结合动爻爻辞的具体意象进行分析
 
+2. fortune：根据卦象和问题性质判断吉凶等级
+   - 可选值（从好到坏）：大吉、吉、小吉、平、小凶、凶、大凶
+   - 大吉/大凶：卦象非常明确，结果极好/极坏
+   - 吉/凶：整体趋势向好/向坏
+   - 小吉/小凶：略有好/坏的倾向，但影响有限
+   - 平：吉凶参半或难以判断
+
+3. advice：给出可执行的具体行动建议，而非空泛的道理
+   - 比如"检查某处"、"询问某人"、"等待几日"等具体建议
+
+请严格以JSON格式返回，不要包含任何其他文字：
 {
-  "overall_meaning": "结合卦象和用户问题的整体解读（不超过150字）",
-  "fortune": "吉凶判断（只能是：吉、凶、平 三者之一）",
-  "advice": "具体的行动建议（不超过100字）"
+  "overall_meaning": "针对问题的具体解读（80-150字）",
+  "fortune": "大吉/吉/小吉/平/小凶/凶/大凶（七选一）",
+  "advice": "具体可执行的建议（50-100字）"
 }
-
-请确保返回的是有效的JSON格式，不要包含其他文字说明。
 """
         return prompt
 
@@ -334,14 +429,8 @@ class HexagramInterpreter:
 
             # 验证必需字段
             if "overall_meaning" in data and "fortune" in data and "advice" in data:
-                # 规范化fortune字段
-                fortune = data["fortune"].strip()
-                if "吉" in fortune and "凶" not in fortune:
-                    fortune = "吉"
-                elif "凶" in fortune:
-                    fortune = "凶"
-                else:
-                    fortune = "平"
+                # 规范化fortune字段（支持七级吉凶）
+                fortune = self._normalize_fortune(data["fortune"].strip())
 
                 self.logger.info("Successfully parsed LLM response as JSON")
                 return {
@@ -404,10 +493,7 @@ class HexagramInterpreter:
                     overall_meaning = "\n".join(section_content).strip()
                 elif section == "fortune" and section_content:
                     fortune_text = "\n".join(section_content).strip()
-                    if "吉" in fortune_text and "凶" not in fortune_text:
-                        fortune = "吉"
-                    elif "凶" in fortune_text:
-                        fortune = "凶"
+                    fortune = self._normalize_fortune(fortune_text)
                 elif section == "advice" and section_content:
                     advice = "\n".join(section_content).strip()
 
@@ -427,10 +513,7 @@ class HexagramInterpreter:
             overall_meaning = "\n".join(section_content).strip()
         elif section == "fortune" and section_content:
             fortune_text = "\n".join(section_content).strip()
-            if "吉" in fortune_text and "凶" not in fortune_text:
-                fortune = "吉"
-            elif "凶" in fortune_text:
-                fortune = "凶"
+            fortune = self._normalize_fortune(fortune_text)
         elif section == "advice" and section_content:
             advice = "\n".join(section_content).strip()
 
