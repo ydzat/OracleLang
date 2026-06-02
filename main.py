@@ -60,7 +60,8 @@ class OracleLangPlugin(BasePlugin):
                 "reset_hour": config_data.get("reset_hour", 0)
             },
             "llm": {
-                "enabled": config_data.get("llm_enabled", True)  # 默认启用 LLM
+                "enabled": config_data.get("llm_enabled", True),  # 默认启用 LLM
+                "model": config_data.get("llm_model", "")
             },
             "display": {
                 "style": config_data.get("display_style", "detailed"),
