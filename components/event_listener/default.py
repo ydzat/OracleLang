@@ -301,20 +301,10 @@ class DivinationEventListener(EventListener):
             result = "❌ 算卦过程出现错误，请稍后再试。"
 
         if self.plugin.plugin_config.get("display", {}).get("style") == "image":
-            try:
-                await ctx.reply(
-                    await markdown_to_message_chain(result)
-                )
-            except Exception:
-                logger.warning("Image reply failed, falling back to plain text", exc_info=True)
-                await ctx.reply(
-                    platform_message.MessageChain([
-                        platform_message.Plain(text=result),
-                    ])
-                )
+            msg_chain = await markdown_to_message_chain(result)
         else:
-            await ctx.reply(
-                platform_message.MessageChain([
-                    platform_message.Plain(text=result),
-                ])
-            )
+            msg_chain = platform_message.MessageChain([
+                platform_message.Plain(text=result),
+            ])
+
+        await ctx.reply(msg_chain)

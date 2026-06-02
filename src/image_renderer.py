@@ -11,9 +11,9 @@ from langbot_plugin.api.entities.builtin.platform import message as platform_mes
 
 logger = logging.getLogger(__name__)
 
-MAX_BASE64_SIZE = 500_000  # ~500KB encoded, stays under QQ send timeout
-MAX_WIDTH = 800
-MAX_HEIGHT = 4000
+MAX_BASE64_SIZE = 150_000  # ~150KB encoded, QQ send timeout threshold
+MAX_WIDTH = 600
+MAX_HEIGHT = 3000
 
 
 async def markdown_to_message_chain(
@@ -50,10 +50,11 @@ async def markdown_to_message_chain(
             if img.mode in ("RGBA", "P"):
                 img = img.convert("RGB")
 
-            for quality in (75, 60, 40):
+            for quality in (50, 35, 25):
                 buffer = io.BytesIO()
                 img.save(buffer, format="JPEG", quality=quality)
                 encoded = base64.b64encode(buffer.getvalue()).decode("utf-8")
+                logger.info(f"JPEG quality={quality}: {len(encoded)} bytes base64")
                 if len(encoded) <= MAX_BASE64_SIZE:
                     return platform_message.MessageChain([
                         platform_message.Image(base64=encoded),
