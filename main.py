@@ -19,7 +19,7 @@ from src.interpreter import HexagramInterpreter
 from src.glyphs import HexagramRenderer
 from src.history import HistoryManager
 from src.limit import UsageLimit
-from src.config_validator import validate_config
+
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -73,9 +73,63 @@ class OracleLangPlugin(BasePlugin):
 
         # Validate configuration
         logger.info("Validating plugin configuration...")
-        is_valid, errors, warnings = validate_config(self.plugin_config, logger)
+        errors: list[str] = []
+        warnings: list[str] = []
 
-        if not is_valid:
+        # Validate limit.daily_max
+        daily_max = self.plugin_config.get("limit", {}).get("daily_max", 3)
+        if not isinstance(daily_max, int):
+            errors.append(f"limit.daily_max 必须是整数，当前类型: {type(daily_max).__name__}")
+        elif daily_max <= 0:
+            errors.append(f"limit.daily_max 必须大于 0，当前值: {daily_max}")
+        elif daily_max > 100:
+            warnings.append(f"limit.daily_max 设置过高 ({daily_max})，建议设置在 1-100 之间")
+
+        # Validate limit.reset_hour
+        reset_hour = self.plugin_config.get("limit", {}).get("reset_hour", 0)
+        if not isinstance(reset_hour, int):
+            errors.append(f"limit.reset_hour 必须是整数，当前类型: {type(reset_hour).__name__}")
+        elif reset_hour < 0 or reset_hour > 23:
+            errors.append(f"limit.reset_hour 必须在 0-23 之间，当前值: {reset_hour}")
+
+        # Validate llm.enabled
+        llm_enabled = self.plugin_config.get("llm", {}).get("enabled", True)
+        if not isinstance(llm_enabled, bool):
+            errors.append(f"llm.enabled 必须是布尔值，当前类型: {type(llm_enabled).__name__}")
+
+        # Validate display.style
+        style = self.plugin_config.get("display", {}).get("style", "detailed")
+        valid_styles = ["simple", "traditional", "detailed"]
+        if not isinstance(style, str):
+            errors.append(f"display.style 必须是字符串，当前类型: {type(style).__name__}")
+        elif style not in valid_styles:
+            errors.append(f"display.style 必须是以下之一: {', '.join(valid_styles)}，当前值: {style}")
+
+        # Validate display.language
+        language = self.plugin_config.get("display", {}).get("language", "zh")
+        valid_languages = ["zh", "en"]
+        if not isinstance(language, str):
+            errors.append(f"display.language 必须是字符串，当前类型: {type(language).__name__}")
+        elif language not in valid_languages:
+            warnings.append(f"display.language 建议使用: {', '.join(valid_languages)}，当前值: {language}")
+
+        # Validate admin_users
+        admin_users = self.plugin_config.get("admin_users", [])
+        if not isinstance(admin_users, list):
+            errors.append(f"admin_users 必须是列表，当前类型: {type(admin_users).__name__}")
+        else:
+            for i, user_id in enumerate(admin_users):
+                if not isinstance(user_id, str):
+                    errors.append(f"admin_users[{i}] 必须是字符串，当前类型: {type(user_id).__name__}")
+                elif not user_id.strip():
+                    warnings.append(f"admin_users[{i}] 是空字符串，将被忽略")
+
+        # Validate debug
+        debug = self.plugin_config.get("debug", False)
+        if not isinstance(debug, bool):
+            errors.append(f"debug 必须是布尔值，当前类型: {type(debug).__name__}")
+
+        if errors:
             error_msg = "Configuration validation failed:\n" + "\n".join(f"  - {e}" for e in errors)
             logger.error(error_msg)
             raise ValueError(error_msg)
