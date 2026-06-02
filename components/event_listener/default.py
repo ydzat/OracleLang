@@ -300,6 +300,14 @@ class DivinationEventListener(EventListener):
             logger.error(f"Divination failed for {sender_id}", exc_info=True)
             result = "❌ 算卦过程出现错误，请稍后再试。"
 
-        await ctx.reply(
-            await markdown_to_message_chain(result)
-        )
+        try:
+            await ctx.reply(
+                await markdown_to_message_chain(result)
+            )
+        except Exception:
+            logger.warning("Image reply failed, falling back to plain text", exc_info=True)
+            await ctx.reply(
+                platform_message.MessageChain([
+                    platform_message.Plain(text=result),
+                ])
+            )
