@@ -23,11 +23,12 @@ class HistoryManager:
         os.makedirs(self.history_dir, exist_ok=True)
         self.logger.debug(f"HistoryManager initialized with directory: {self.history_dir}")
         
-    def save_record(self, user_id: str, question: str, hexagram_data: Dict, interpretation: Dict) -> bool:
+    def save_record(self, launcher_type: str, user_id: str, question: str, hexagram_data: Dict, interpretation: Dict) -> bool:
         """
         保存用户的算卦记录
         
         参数:
+            launcher_type: 启动器类型 ("person" 或 "group")
             user_id: 用户ID
             question: 用户问题
             hexagram_data: 卦象数据
@@ -62,7 +63,7 @@ class HistoryManager:
             }
             
             # 读取现有历史数据（使用跨平台文件锁）
-            history_file = os.path.join(self.history_dir, f"{user_id}.json")
+            history_file = os.path.join(self.history_dir, f"{launcher_type}_{user_id}.json")
             lock_file = history_file + ".lock"
             lock = FileLock(lock_file, timeout=10)
             history = []
@@ -92,18 +93,19 @@ class HistoryManager:
             self.logger.error(f"Failed to save history record for user {user_id}: {str(e)}", exc_info=True)
             return False
             
-    def get_recent_records(self, user_id: str, limit: int = 5) -> List[Dict]:
+    def get_recent_records(self, launcher_type: str, user_id: str, limit: int = 5) -> List[Dict]:
         """
         获取用户最近的算卦记录
         
         参数:
+            launcher_type: 启动器类型 ("person" 或 "group")
             user_id: 用户ID
             limit: 最大记录数
             
         返回:
             记录列表，从新到旧排序
         """
-        history_file = os.path.join(self.history_dir, f"{user_id}.json")
+        history_file = os.path.join(self.history_dir, f"{launcher_type}_{user_id}.json")
 
         if not os.path.exists(history_file):
             return []
@@ -124,35 +126,37 @@ class HistoryManager:
             self.logger.error(f"Failed to read history records for user {user_id}: {str(e)}", exc_info=True)
             return []
             
-    def get_record_by_index(self, user_id: str, index: int) -> Optional[Dict]:
+    def get_record_by_index(self, launcher_type: str, user_id: str, index: int) -> Optional[Dict]:
         """
         根据索引获取特定的历史记录
         
         参数:
+            launcher_type: 启动器类型 ("person" 或 "group")
             user_id: 用户ID
             index: 记录索引，从1开始计数
             
         返回:
             记录数据，如果不存在则返回None
         """
-        records = self.get_recent_records(user_id, limit=20)
+        records = self.get_recent_records(launcher_type, user_id, limit=20)
         
         if not records or index <= 0 or index > len(records):
             return None
             
         return records[index - 1]
         
-    def clear_history(self, user_id: str) -> bool:
+    def clear_history(self, launcher_type: str, user_id: str) -> bool:
         """
         清除用户的所有历史记录
         
         参数:
+            launcher_type: 启动器类型 ("person" 或 "group")
             user_id: 用户ID
             
         返回:
             操作是否成功
         """
-        history_file = os.path.join(self.history_dir, f"{user_id}.json")
+        history_file = os.path.join(self.history_dir, f"{launcher_type}_{user_id}.json")
         
         if os.path.exists(history_file):
             try:

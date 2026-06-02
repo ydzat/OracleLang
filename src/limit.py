@@ -132,11 +132,12 @@ class UsageLimit:
             self.usage_data["last_reset"] = current_date
             self._save_usage_data()
             
-    def check_user_limit(self, user_id: str) -> bool:
+    def check_user_limit(self, launcher_type: str, user_id: str) -> bool:
         """
         检查用户是否超过当日使用限制
         
         参数:
+            launcher_type: 启动器类型 (person/group)
             user_id: 用户ID
             
         返回:
@@ -146,8 +147,8 @@ class UsageLimit:
         # 检查是否需要重置
         self._check_reset()
         
-        # 确保用户ID是字符串类型
-        user_id_str = str(user_id)
+        # 确保用户ID是字符串类型，加入启动器类型前缀以区分私聊和群聊
+        user_id_str = f"{launcher_type}_{str(user_id)}"
         
         # 获取用户的使用情况
         user_data = self.usage_data.get("users", {}).get(user_id_str, {"count": 0})
@@ -157,18 +158,19 @@ class UsageLimit:
         max_count = self.config.get("limit", {}).get("daily_max", 3)
         return count < max_count
         
-    def update_usage(self, user_id: str):
+    def update_usage(self, launcher_type: str, user_id: str):
         """
         更新用户的使用次数
         
         参数:
+            launcher_type: 启动器类型 (person/group)
             user_id: 用户ID
         """
         # 检查是否需要重置
         self._check_reset()
         
-        # 确保用户ID是字符串类型
-        user_id_str = str(user_id)
+        # 确保用户ID是字符串类型，加入启动器类型前缀以区分私聊和群聊
+        user_id_str = f"{launcher_type}_{str(user_id)}"
         
         # 确保users字典存在
         if "users" not in self.usage_data:
@@ -187,11 +189,12 @@ class UsageLimit:
         # 保存数据
         self._save_usage_data()
         
-    def get_remaining(self, user_id: str) -> int:
+    def get_remaining(self, launcher_type: str, user_id: str) -> int:
         """
         获取用户当日剩余使用次数
         
         参数:
+            launcher_type: 启动器类型 (person/group)
             user_id: 用户ID
             
         返回:
@@ -200,8 +203,8 @@ class UsageLimit:
         # 检查是否需要重置
         self._check_reset()
         
-        # 确保用户ID是字符串类型
-        user_id_str = str(user_id)
+        # 确保用户ID是字符串类型，加入启动器类型前缀以区分私聊和群聊
+        user_id_str = f"{launcher_type}_{str(user_id)}"
         
         # 获取用户的使用情况
         user_data = self.usage_data.get("users", {}).get(user_id_str, {"count": 0})
@@ -211,18 +214,19 @@ class UsageLimit:
         max_count = self.config.get("limit", {}).get("daily_max", 3)
         return max(0, max_count - count)
         
-    def reset_user(self, user_id: str):
+    def reset_user(self, launcher_type: str, user_id: str):
         """
         重置指定用户的使用次数（将 count 设为 0，更新时间为当前）
         
         参数:
+            launcher_type: 启动器类型 (person/group)
             user_id: 用户 ID
         """
         # 检查是否需要重置
         self._check_reset()
         
-        # 确保用户ID是字符串类型
-        user_id_str = str(user_id)
+        # 确保用户ID是字符串类型，加入启动器类型前缀以区分私聊和群聊
+        user_id_str = f"{launcher_type}_{str(user_id)}"
         
         # 确保users字典存在
         if "users" not in self.usage_data:
