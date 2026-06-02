@@ -108,6 +108,9 @@ spec:
     Command:
       fromDirs:
       - path: components/commands/
+    EventListener:
+      fromDirs:
+      - path: components/event_listener/
 
 execution:
   python:

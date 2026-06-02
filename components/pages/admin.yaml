@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Page
+metadata:
+  name: admin
+  label:
+    en_US: OracleLang Admin
+    zh_Hans: 算卦管理
+  description:
+    en_US: Divination statistics and user management
+    zh_Hans: 算卦统计与用户管理
+spec:
+  config: []
+execution:
+  python:
+    path: admin.py
+    attr: OracleAdminPage

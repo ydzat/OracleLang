@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: EventListener
+metadata:
+  name: default
+  label:
+    en_US: Divination Listener
+    zh_Hans: 算卦监听器
+  description:
+    en_US: Listens for "算卦" keyword and triggers divination
+    zh_Hans: 监听"算卦"关键词并触发算卦
+spec:
+  config: []
+execution:
+  python:
+    path: default.py
+    attr: DivinationEventListener
