@@ -98,8 +98,15 @@ class OracleLangPlugin(BasePlugin):
         if not isinstance(llm_enabled, bool):
             errors.append(f"llm.enabled 必须是布尔值，当前类型: {type(llm_enabled).__name__}")
 
-        # Validate display.style
+        # Validate display.style (with legacy migration)
         style = self.plugin_config.get("display", {}).get("style", "image")
+        legacy_styles = {"simple", "traditional", "detailed"}
+        if style in legacy_styles:
+            warnings.append(
+                f"display.style 旧值 '{style}' 已自动迁移为 'image'（请在WebUI中确认）"
+            )
+            self.plugin_config["display"]["style"] = "image"
+            style = "image"
         valid_styles = ["text", "image"]
         if not isinstance(style, str):
             errors.append(f"display.style 必须是字符串，当前类型: {type(style).__name__}")
