@@ -65,25 +65,21 @@ spec:
     - name: display_style
       type: select
       label:
-        en_US: Hexagram Display Style
-        zh_Hans: 卦象显示风格
+        en_US: Output Format
+        zh_Hans: 输出格式
       description:
-        en_US: Visual style for displaying hexagrams
-        zh_Hans: 卦象的视觉显示风格
+        en_US: Choose text output or rendered image (requires pillowmd)
+        zh_Hans: 选择文字输出或渲染为图片（需要 pillowmd）
       options:
-        - name: simple
+        - name: text
           label:
-            en_US: Simple
-            zh_Hans: 简洁
-        - name: traditional
+            en_US: Text
+            zh_Hans: 文字
+        - name: image
           label:
-            en_US: Traditional
-            zh_Hans: 传统
-        - name: detailed
-          label:
-            en_US: Detailed
-            zh_Hans: 详细
-      default: detailed
+            en_US: Image
+            zh_Hans: 图片
+      default: image
       required: false
 
     - name: admin_users

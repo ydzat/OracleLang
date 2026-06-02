@@ -64,7 +64,7 @@ class OracleLangPlugin(BasePlugin):
                 "model": config_data.get("llm_model", "")
             },
             "display": {
-                "style": config_data.get("display_style", "detailed"),
+                "style": config_data.get("display_style", "image"),
                 "language": "zh"
             },
             "admin_users": config_data.get("admin_users", []),
@@ -99,8 +99,8 @@ class OracleLangPlugin(BasePlugin):
             errors.append(f"llm.enabled 必须是布尔值，当前类型: {type(llm_enabled).__name__}")
 
         # Validate display.style
-        style = self.plugin_config.get("display", {}).get("style", "detailed")
-        valid_styles = ["simple", "traditional", "detailed"]
+        style = self.plugin_config.get("display", {}).get("style", "image")
+        valid_styles = ["text", "image"]
         if not isinstance(style, str):
             errors.append(f"display.style 必须是字符串，当前类型: {type(style).__name__}")
         elif style not in valid_styles:
@@ -226,7 +226,7 @@ class OracleLangPlugin(BasePlugin):
         return formatter.format_divination_result(
             result=interpretation,
             question=question,
-            style=self.plugin_config.get("display", {}).get("style", "detailed"),
+            style="detailed",  # hexagram glyph style
             hexagram_data={
                 "original": hexagram_data["original"],
                 "changed": hexagram_data["changed"],
