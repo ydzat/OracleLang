@@ -284,10 +284,11 @@ class DivinationEventListener(EventListener):
             )
             return
 
-        # Process divination via plugin (old API — will be updated in T9)
+        # Process divination via plugin
         try:
             result = await self.plugin.process_divination(
                 question=question.strip(),
+                launcher_type=launcher_type,
                 sender_id=sender_id,
             )
         except Exception:
