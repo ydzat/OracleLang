@@ -302,9 +302,10 @@ class DivinationEventListener(EventListener):
 
         if self.plugin.plugin_config.get("display", {}).get("style") == "image":
             msg_chain = await markdown_to_message_chain(result)
+            await ctx.reply(msg_chain)
         else:
-            msg_chain = platform_message.MessageChain([
-                platform_message.Plain(text=result),
-            ])
-
-        await ctx.reply(msg_chain)
+            await ctx.reply(
+                platform_message.MessageChain([
+                    platform_message.Plain(text=result),
+                ])
+            )
