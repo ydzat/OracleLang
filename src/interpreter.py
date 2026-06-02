@@ -340,14 +340,13 @@ class HexagramInterpreter:
             # 导入 LangBot 消息类型
             from langbot_plugin.api.entities.builtin.provider import message as provider_message
 
-            # 调用 LangBot LLM API（传入空 session 隔离对话）
+            # 调用 LangBot LLM API
             llm_message = await self.plugin.invoke_llm(
                 llm_model_uuid=model_uuid,
                 messages=[provider_message.Message(role="user", content=prompt)],
                 funcs=[],
                 timeout=120,
                 extra_args={},
-                session={},
             )
 
             # 获取响应文本
