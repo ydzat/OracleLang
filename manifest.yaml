@@ -4,7 +4,7 @@ metadata:
   author: ydzat
   name: OracleLang
   repository: 'https://github.com/ydzat/OracleLang'
-  version: 3.1.0
+  version: 4.0.0
   description:
     en_US: 'Liu Yao divination plugin using traditional San Qian Fa (coin toss method). Simulates 6 coin tosses to generate hexagrams with professional interpretations.'
     zh_Hans: '六爻算卦插件，使用传统三钱法起卦。模拟6次投掷3枚硬币生成卦象，提供专业的卦象解读。'
@@ -111,6 +111,9 @@ spec:
     EventListener:
       fromDirs:
       - path: components/event_listener/
+    Page:
+      fromDirs:
+      - path: components/pages/
 
 execution:
   python:
