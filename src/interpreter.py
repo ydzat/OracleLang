@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import asyncio
 import logging
@@ -339,13 +340,14 @@ class HexagramInterpreter:
             # 导入 LangBot 消息类型
             from langbot_plugin.api.entities.builtin.provider import message as provider_message
 
-            # 调用 LangBot LLM API
+            # 调用 LangBot LLM API（传入空 session 隔离对话）
             llm_message = await self.plugin.invoke_llm(
                 llm_model_uuid=model_uuid,
                 messages=[provider_message.Message(role="user", content=prompt)],
                 funcs=[],
                 timeout=120,
                 extra_args={},
+                session={},
             )
 
             # 获取响应文本
@@ -427,6 +429,16 @@ class HexagramInterpreter:
             if cleaned_text.endswith("```"):
                 cleaned_text = cleaned_text[:-3]
             cleaned_text = cleaned_text.strip()
+
+            # 剥离深度思考模型的 reasoning 内容
+            cleaned_text = re.sub(r'<think>.*?</think>', '', cleaned_text, flags=re.DOTALL).strip()
+
+            # 尝试提取 JSON 块（跳过非 JSON 前缀）
+            json_match = re.search(r'\{[^{}]*"overall_meaning"[^{}]*\}', cleaned_text, re.DOTALL)
+            if json_match:
+                cleaned_text = json_match.group(0)
+            else:
+                cleaned_text = cleaned_text.strip()
 
             # 尝试解析JSON
             data = json.loads(cleaned_text)
