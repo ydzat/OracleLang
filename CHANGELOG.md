@@ -14,16 +14,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - EventListener component: natural language triggering via `算卦 <question>` (no prefix needed)
 - Page component: WebUI admin dashboard with usage statistics
-- Markdown output formatting (compatible with markdown2img plugin)
+- Built-in Markdown-to-image rendering via pillowmd (`src/image_renderer.py`)
 - Launcher type awareness: private chat and group chat limits/history tracked independently
 - MarkdownFormatter module (`src/formatter.py`) with full hexagram rendering support
+- LLM model selector in WebUI config (choose which model to use for interpretation)
 
 ### Changed
 - Command routing: `_execute()` override replaced with SDK-native `name="*"` catch-all pattern
-- Output format: all responses now use Markdown (headings, code blocks, bold text)
+- Output format: `display_style` repurposed to "text"/"image" toggle, default image
+- Output format: all responses use Markdown (headings, code blocks, bold text)
 - User identity: history and limit keys now include `{launcher_type}` prefix
 - Help text: rewritten in Markdown with natural language examples
 - Default LLM timeout explicitly set to 120 seconds
+- DeepSeek-R1 / reasoning models: auto-strip `&lt;think&gt;` blocks from LLM output
+- Legacy display_style values auto-migrated to "image"
+
+### Fixed
+- Double-reply issue: `prevent_default()` correctly stops main pipeline
+- EventListener `launcher_type` parameter now passed to process_divination
+- JSON parsing robust against reasoning model output
 
 ### Removed
 - `src/config_validator.py` — validation logic inlined into `main.py`
