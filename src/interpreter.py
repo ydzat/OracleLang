@@ -319,16 +319,19 @@ class HexagramInterpreter:
             return {}
 
         try:
-            # 获取可用的 LLM 模型列表
+            # 优先使用配置中指定的模型，否则使用第一个可用模型
             # 注意：get_llm_models() 返回 list[str]（UUID 字符串列表）
-            llm_models = await self.plugin.get_llm_models()
-            if not llm_models:
-                self.logger.warning("No LLM models configured in LangBot")
-                return {}
-
-            # 使用第一个可用模型的 UUID
-            model_uuid = llm_models[0]
-            self.logger.debug(f"Using LLM model: {model_uuid}")
+            configured_model = self.config["llm"].get("model", "")
+            if configured_model:
+                model_uuid = configured_model
+                self.logger.debug(f"Using configured LLM model: {model_uuid}")
+            else:
+                llm_models = await self.plugin.get_llm_models()
+                if not llm_models:
+                    self.logger.warning("No LLM models configured in LangBot")
+                    return {}
+                model_uuid = llm_models[0]
+                self.logger.debug(f"Using default LLM model: {model_uuid}")
 
             # 构建提示词
             prompt = self._build_llm_prompt(question, original_name, changed_name, moving_lines)
