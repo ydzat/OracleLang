@@ -1,8 +1,25 @@
 # OracleLang 六爻算卦插件
 
+![Version](https://img.shields.io/badge/version-4.0.0-blue)
+
 OracleLang 是一个基于传统六爻占卜原理的算卦插件，为 [LangBot](https://github.com/langbot-app/LangBot) 平台开发。使用传统的**三钱法**起卦，模拟投掷硬币生成卦象，并提供专业的卦象解读。
 
 ## 更新日志
+
+### 4.0.0 (2026-06-02)
+- **重大更新**: 升级到 LangBot SDK 0.3.11，命令触发改为自然语言 `算卦`
+- **新增**: EventListener 组件支持自然语言触发（无需命令前缀）
+- **新增**: WebUI 管理面板，展示使用统计
+- **新增**: Markdown 输出格式（兼容 markdown2img 插件，自动渲染为图片）
+- **新增**: 私聊和群聊的算卦限额/历史记录独立追踪
+- **新增**: MarkdownFormatter 模块（src/formatter.py），支持完整卦象渲染
+- **变更**: 命令路由改用 SDK 原生 `name="*"` catch-all 模式
+- **变更**: 所有回复使用 Markdown 格式（标题、代码块、粗体）
+- **变更**: 用户标识加入 `{launcher_type}` 前缀
+- **变更**: 帮助文本改用 Markdown，示例使用自然语言
+- **变更**: LLM 默认超时设为 120 秒
+- **移除**: `src/config_validator.py`（验证逻辑内联到 main.py）
+- **移除**: `set` 子命令（limit.py 中不存在对应方法）
 
 ### 3.1.0 (2026-02-23)
 - **修复**：卦名显示顺序修正（上卦在前，下卦在后）
@@ -59,8 +76,10 @@ OracleLang 是一个基于传统六爻占卜原理的算卦插件，为 [LangBot
 - **动爻标记**：清晰展示老阳、老阴等动爻
 - **专业卦象解读**：提供卦辞、爻辞和整体解释
 - **LLM 增强解读**：可选使用大语言模型提供更深入的个性化解读
-- **历史记录**：查询个人的算卦历史
-- **使用限制**：每日限额管理，防止过度依赖
+- **历史记录**：查询个人的算卦历史（私聊和群聊记录独立追踪）
+- **使用限制**：每日限额管理，防止过度依赖（私聊和群聊限额独立计算）
+- **Markdown 输出**：所有回复使用 Markdown 格式，兼容 markdown2img 插件自动渲染为图片
+- **WebUI 管理面板**：在 LangBot WebUI 中查看使用统计和系统状态
 
 ## 三钱法原理
 
@@ -84,43 +103,49 @@ OracleLang 是一个基于传统六爻占卜原理的算卦插件，为 [LangBot
 
 ### 基本用法
 
+直接发送消息即可：
+
 ```
-!suangua <您的问题>
+算卦 <您的问题>
 ```
 
 示例：
 ```
-!suangua 我今天的工作运势如何？
-!suangua 近期是否适合投资？
-!suangua 我与TA的缘分怎样？
+算卦 我今天的工作运势如何？
+算卦 近期是否适合投资？
+算卦 我与TA的缘分怎样？
 ```
 
 ### 查看帮助
 
 ```
-!suangua help
+算卦 help
 ```
 
 ### 查看历史记录
 
 ```
-!suangua history
+算卦 history
 ```
 
 ### 查看用户ID
 
 ```
-!suangua myid
+算卦 myid
 ```
 
 ### 管理员命令
 
 ```
-!suangua reset <用户ID>   # 重置用户今日使用次数
-!suangua stats            # 查看系统使用统计
+!算卦 reset <用户ID>   # 重置用户今日使用次数
+!算卦 stats            # 查看系统使用统计
 ```
 
+> 普通用户直接输入 `算卦` 即可使用。管理员命令以 `!算卦` 前缀触发。
+
 ## 输出示例
+
+所有算卦结果以 Markdown 格式输出，兼容 [markdown2img](https://github.com/langbot-app/markdown2img) 插件自动渲染为图片展示。
 
 ```
 📝 问题: 我今天的工作运势如何？
@@ -184,28 +209,36 @@ OracleLang 是一个基于传统六爻占卜原理的算卦插件，为 [LangBot
 
 ### 4. 如何成为管理员？
 
-在插件配置的「管理员用户ID列表」中添加您的用户ID。可通过 `!suangua myid` 查看ID。
+在插件配置的「管理员用户ID列表」中添加您的用户ID。可通过 `算卦 myid` 查看ID。
 
 ## 技术架构
 
 ```
 OracleLang/
-├── main.py                 # 插件主类
+├── main.py                 # 插件主类（含配置验证逻辑）
 ├── manifest.yaml           # 插件配置清单
 ├── components/
-│   └── commands/
-│       ├── suangua.py      # 命令处理器
-│       └── suangua.yaml    # 命令配置
+│   ├── commands/
+│   │   ├── suangua.py      # 命令处理器（管理员命令）
+│   │   └── suangua.yaml    # 命令配置
+│   ├── event_listener/
+│   │   └── suangua.py      # 事件监听器（自然语言触发）
+│   └── page/
+│       └── index.py        # WebUI 管理面板
 ├── src/
 │   ├── calculator.py       # 三钱法卦象计算
 │   ├── interpreter.py      # 卦象解释器
-│   ├── glyphs.py          # 卦象渲染
-│   ├── history.py         # 历史记录
-│   ├── limit.py           # 使用限制
-│   └── data_constants.py  # 64卦数据
-└── data/
-    └── static/
-        └── hexagrams.json  # 卦象详细数据
+│   ├── glyphs.py           # 卦象渲染（3种风格）
+│   ├── formatter.py        # Markdown 格式化输出
+│   ├── history.py          # 历史记录（launcher_type 感知）
+│   ├── limit.py            # 使用限制（launcher_type 感知）
+│   └── data_constants.py   # 64卦映射表、八卦、Unicode符号
+├── data/
+│   └── static/
+│       ├── hexagrams.json  # 卦象详细数据（运行时生成）
+│       └── hexagrams_complete.json  # 完整数据源
+└── .github/workflows/
+    └── release.yml         # CI/CD 自动打包发布
 ```
 
 ## 反馈与支持

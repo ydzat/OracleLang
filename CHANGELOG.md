@@ -5,6 +5,30 @@ All notable changes to OracleLang plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] — 2026-06-02
+
+### Breaking Changes
+- SDK upgraded from 0.2.7 to 0.3.11. `get_llm_models()` now returns `list[str]` directly.
+- Command component renamed from `suangua` to `算卦`.
+
+### Added
+- EventListener component: natural language triggering via `算卦 <question>` (no prefix needed)
+- Page component: WebUI admin dashboard with usage statistics
+- Markdown output formatting (compatible with markdown2img plugin)
+- Launcher type awareness: private chat and group chat limits/history tracked independently
+- MarkdownFormatter module (`src/formatter.py`) with full hexagram rendering support
+
+### Changed
+- Command routing: `_execute()` override replaced with SDK-native `name="*"` catch-all pattern
+- Output format: all responses now use Markdown (headings, code blocks, bold text)
+- User identity: history and limit keys now include `{launcher_type}` prefix
+- Help text: rewritten in Markdown with natural language examples
+- Default LLM timeout explicitly set to 120 seconds
+
+### Removed
+- `src/config_validator.py` — validation logic inlined into `main.py`
+- `set` subcommand — method referenced did not exist in limit.py
+
 ## [2.1.0] - 2025-11-07
 
 ### Changed
@@ -90,6 +114,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 支持历史记录查询
 - 可选的大语言模型集成
 
+[4.0.0]: https://github.com/ydzat/OracleLang/compare/v3.1.0...v4.0.0
 [2.1.0]: https://github.com/ydzat/OracleLang/compare/v2.0.2...v2.1.0
 [2.0.2]: https://github.com/ydzat/OracleLang/compare/v2.0.1...v2.0.2
 [2.0.1]: https://github.com/ydzat/OracleLang/compare/v2.0.0...v2.0.1
