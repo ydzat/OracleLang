@@ -11,6 +11,8 @@ from langbot_plugin.api.definition.components.common.event_listener import Event
 from langbot_plugin.api.entities import events, context
 from langbot_plugin.api.entities.builtin.platform import message as platform_message
 
+from src.image_renderer import markdown_to_message_chain
+
 logger = logging.getLogger(__name__)
 
 # Subcommand alias mapping (must match suangua.py)
@@ -299,7 +301,5 @@ class DivinationEventListener(EventListener):
             result = "❌ 算卦过程出现错误，请稍后再试。"
 
         await ctx.reply(
-            platform_message.MessageChain([
-                platform_message.Plain(text=result),
-            ])
+            await markdown_to_message_chain(result)
         )
