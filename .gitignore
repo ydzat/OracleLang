@@ -141,6 +141,10 @@ dist/*.lbpkg
 dist/*.md5
 dist/*.sha256
 
+# OpenCode
+.omo/
+AGENTS.md
+
 # IDE
 .vscode/
 .idea/
