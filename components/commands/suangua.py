@@ -60,7 +60,8 @@ class SuanguaCommand(Command):
                 # Process divination using coin toss method
                 result = await self.plugin.process_divination(
                     question=question.strip(),
-                    sender_id=sender_id
+                    launcher_type=launcher_type,
+                    sender_id=sender_id,
                 )
 
                 yield CommandReturn(text=result)
@@ -68,7 +69,7 @@ class SuanguaCommand(Command):
             except Exception as e:
                 logger.error(f"Error handling divination command: {e}", exc_info=True)
                 yield CommandReturn(
-                    text=f"❌ 算卦过程出现错误: {str(e)}\n请稍后再试或联系管理员。"
+                    text=f"**错误**: 算卦过程出现错误: {str(e)}\n请稍后再试或联系管理员。"
                 )
         
         # Help subcommand
@@ -86,7 +87,7 @@ class SuanguaCommand(Command):
                     
             except Exception as e:
                 logger.error(f"Error showing help: {e}", exc_info=True)
-                yield CommandReturn(text=f"❌ 获取帮助信息时出错: {str(e)}")
+                yield CommandReturn(text=f"**错误**: 获取帮助信息时出错: {str(e)}")
         
         # History subcommand
         @self.subcommand(
@@ -105,7 +106,7 @@ class SuanguaCommand(Command):
                     
             except Exception as e:
                 logger.error(f"Error showing history: {e}", exc_info=True)
-                yield CommandReturn(text=f"❌ 获取历史记录时出错: {str(e)}")
+                yield CommandReturn(text=f"**错误**: 获取历史记录时出错: {str(e)}")
         
         # My ID subcommand
         @self.subcommand(
@@ -118,11 +119,11 @@ class SuanguaCommand(Command):
             """Show user ID"""
             try:
                 sender_id = str(context.session.launcher_id)
-                yield CommandReturn(text=f"您的用户ID是: {sender_id}")
+                yield CommandReturn(text=f"**您的用户ID是**: {sender_id}")
                     
             except Exception as e:
                 logger.error(f"Error showing user ID: {e}", exc_info=True)
-                yield CommandReturn(text=f"❌ 获取用户ID时出错: {str(e)}")
+                yield CommandReturn(text=f"**错误**: 获取用户ID时出错: {str(e)}")
         
         # Admin: Reset user usage
         @self.subcommand(
@@ -139,21 +140,21 @@ class SuanguaCommand(Command):
                 
                 # Check admin permission
                 if not self.plugin._is_admin(sender_id):
-                    yield CommandReturn(text="❌ 此命令仅限管理员使用")
+                    yield CommandReturn(text="**错误**: 此命令仅限管理员使用")
                     return
 
                 # Parse parameters
                 if len(context.crt_params) < 1:
-                    yield CommandReturn(text="❌ 用法：!算卦 reset <用户ID>")
+                    yield CommandReturn(text="**错误**: 用法：算卦 reset <用户ID>")
                     return
 
                 target_user = context.crt_params[0]
                 self.plugin.limit.reset_user(launcher_type, target_user)
-                yield CommandReturn(text=f"✅ 已重置用户 {target_user} 的今日使用次数")
+                yield CommandReturn(text=f"✅ **已重置**用户 {target_user} 的今日使用次数")
 
             except Exception as e:
                 logger.error(f"Error resetting user usage: {e}", exc_info=True)
-                yield CommandReturn(text=f"❌ 重置使用次数时出错: {str(e)}")
+                yield CommandReturn(text=f"**错误**: 重置使用次数时出错: {str(e)}")
         
         # Admin: Statistics
         @self.subcommand(
@@ -169,17 +170,17 @@ class SuanguaCommand(Command):
                 
                 # Check admin permission
                 if not self.plugin._is_admin(sender_id):
-                    yield CommandReturn(text="❌ 此命令仅限管理员使用")
+                    yield CommandReturn(text="**错误**: 此命令仅限管理员使用")
                     return
 
                 stats = self.plugin.limit.get_usage_statistics()
-                stats_text = f"""📊 系统使用统计：
-总用户数：{stats['total_users']}
-总使用次数：{stats['total_usage']}
-上次重置：{stats['last_reset']}
+                stats_text = f"""## 📊 系统使用统计
+- **总用户数**: {stats['total_users']}
+- **总使用次数**: {stats['total_usage']}
+- **上次重置**: {stats['last_reset']}
 """
                 yield CommandReturn(text=stats_text)
 
             except Exception as e:
                 logger.error(f"Error showing statistics: {e}", exc_info=True)
-                yield CommandReturn(text=f"❌ 获取统计信息时出错: {str(e)}")
+                yield CommandReturn(text=f"**错误**: 获取统计信息时出错: {str(e)}")
