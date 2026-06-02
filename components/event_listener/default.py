@@ -102,7 +102,7 @@ class DivinationEventListener(EventListener):
                 await self._handle_divination(ctx, question, launcher_type, sender_id)
 
             # 阻止主 pipeline 重复处理此消息
-            ctx.event.reply_message_chain = platform_message.MessageChain([])
+            ctx.prevent_default()
 
         except Exception:
             logger.error("Error handling 算卦 message", exc_info=True)
