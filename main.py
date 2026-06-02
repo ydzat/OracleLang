@@ -1,7 +1,7 @@
 """
 OracleLang Plugin - Liu Yao Divination Plugin for LangBot 4.0
 Uses traditional San Qian Fa (coin toss method) for divination
-Version: 3.1.0
+Version: 4.0.0
 Author: ydzat
 """
 from __future__ import annotations
@@ -166,7 +166,7 @@ class OracleLangPlugin(BasePlugin):
         return """六爻算卦使用说明：
 
 基础用法：
-  !suangua <问题>  - 使用三钱法起卦占卜
+  算卦 <问题>  - 使用三钱法起卦占卜（直接发送消息即可，无需任何前缀）
 
 起卦原理（三钱法）：
   模拟投掷3枚硬币，共6次（对应六爻）
@@ -177,26 +177,28 @@ class OracleLangPlugin(BasePlugin):
   3反(○○○) → 老阴(6) → 阴爻，动爻
 
 查询命令：
-  !suangua help  - 显示此帮助信息
-  !suangua history  - 查看您的算卦历史记录
-  !suangua myid  - 查看您的用户ID
+  算卦 help  - 显示此帮助信息
+  算卦 history  - 查看您的算卦历史记录
+  算卦 myid  - 查看您的用户ID
 
-管理命令（仅管理员）：
-  !suangua reset <用户ID>  - 重置用户今日使用次数
-  !suangua stats  - 查看系统使用统计
+管理命令（仅管理员，需使用命令前缀如 !算卦）：
+  算卦 reset <用户ID>  - 重置用户今日使用次数
+  算卦 stats  - 查看系统使用统计
 
 示例：
-  !suangua 我今天的工作运势如何？
-  !suangua 这次项目能否成功？
+  算卦 我今天的工作运势如何？
+  算卦 这次项目能否成功？
+
+提示：私聊和群聊的算卦次数独立计算。
 """
 
     def _parse_question(self, cmd_args: str) -> str:
         """Parse and return the question from command arguments"""
         return cmd_args.strip()
 
-    def _get_history_text(self, sender_id: str) -> str:
+    def _get_history_text(self, launcher_type: str, sender_id: str) -> str:
         """Get user's divination history"""
-        records = self.history.get_recent_records(sender_id, limit=10)
+        records = self.history.get_recent_records(launcher_type, sender_id, limit=10)
 
         if not records:
             return "您还没有算卦记录"
@@ -216,51 +218,30 @@ class OracleLangPlugin(BasePlugin):
 
         return result
 
-    def _format_response(self, question: str, hexagram_data: dict, interpretation: dict, visual: str) -> str:
-        """Format response message"""
-        original_name = interpretation["original"]["name"]
-        changed_name = interpretation["changed"]["name"]
-        has_moving = hexagram_data['moving'].count(1) > 0
+    def _format_response(self, question: str, hexagram_data: dict, interpretation: dict, visual: str, remaining: int = 0) -> str:
+        """Format response as Markdown using the MarkdownFormatter."""
+        from src.formatter import MarkdownFormatter
+        formatter = MarkdownFormatter(logger=logger)
+        return formatter.format_divination_result(
+            result=interpretation,
+            question=question,
+            style=self.plugin_config.get("display", {}).get("style", "detailed"),
+            hexagram_data={
+                "original": hexagram_data["original"],
+                "changed": hexagram_data["changed"],
+                "moving": hexagram_data["moving"],
+            },
+            remaining=remaining,
+            daily_max=self.plugin_config.get("limit", {}).get("daily_max", 3),
+        )
 
-        response = [
-            f"📝 问题: {question}" if question else "🔮 随缘一卦",
-        ]
-
-        # 显示投掷记录
-        if "coin_records" in hexagram_data:
-            response.append("\n🎲 起卦过程:")
-            for record in hexagram_data["coin_records"]:
-                moving_mark = " ⚡" if record["is_moving"] else ""
-                response.append(f"  {record['yao']}: {record['coins']} → {record['type']}{moving_mark}")
-
-        response.extend([
-            f"\n{visual}",
-            f"\n📌 卦象: {original_name} {'→ ' + changed_name if has_moving else ''}",
-            f"\n✨ 卦辞: {interpretation['original']['gua_ci']}",
-        ])
-
-        # Moving lines interpretation
-        if has_moving:
-            response.append("\n🔄 动爻:")
-            for line in interpretation["moving_lines_meaning"]:
-                if line:
-                    response.append(f"  {line}")
-
-        # Overall interpretation
-        response.append(f"\n📜 解释: {interpretation['overall_meaning']}")
-
-        # Advice
-        if "advice" in interpretation:
-            response.append(f"\n💡 建议: {interpretation['advice']}")
-
-        return "\n".join(response)
-
-    async def process_divination(self, question: str, sender_id: str) -> str:
+    async def process_divination(self, question: str, launcher_type: str, sender_id: str) -> str:
         """
         Process divination request using coin toss method
 
         Args:
             question: The question to divine
+            launcher_type: The launcher type (e.g. 'group', 'private')
             sender_id: User ID
 
         Returns:
@@ -291,22 +272,22 @@ class OracleLangPlugin(BasePlugin):
             use_llm=use_llm
         )
 
-        # Build response message
-        result_text = self._format_response(question, hexagram_data, interpretation, visual)
+        # Update usage
+        self.limit.update_usage(launcher_type, sender_id)
+        remaining = self.limit.get_remaining(launcher_type, sender_id)
+
+        # Build response using MarkdownFormatter
+        result_text = self._format_response(
+            question, hexagram_data, interpretation, visual, remaining=remaining
+        )
 
         # Save to history
         self.history.save_record(
+            launcher_type=launcher_type,
             user_id=sender_id,
             question=question,
             hexagram_data=hexagram_data,
             interpretation=interpretation
         )
-
-        # Update usage
-        self.limit.update_usage(sender_id)
-        remaining = self.limit.get_remaining(sender_id)
-
-        # Add usage count hint
-        result_text += f"\n\n今日剩余算卦次数: {remaining}/{self.plugin_config['limit']['daily_max']}"
 
         return result_text
