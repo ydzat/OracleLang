@@ -320,14 +320,14 @@ class HexagramInterpreter:
 
         try:
             # 获取可用的 LLM 模型列表
-            # 注意：get_llm_models() 实际返回 list[dict]，每个 dict 包含模型信息（包括 uuid 字段）
+            # 注意：get_llm_models() 返回 list[str]（UUID 字符串列表）
             llm_models = await self.plugin.get_llm_models()
             if not llm_models:
                 self.logger.warning("No LLM models configured in LangBot")
                 return {}
 
             # 使用第一个可用模型的 UUID
-            model_uuid = llm_models[0]['uuid']
+            model_uuid = llm_models[0]
             self.logger.debug(f"Using LLM model: {model_uuid}")
 
             # 构建提示词
@@ -341,6 +341,7 @@ class HexagramInterpreter:
                 llm_model_uuid=model_uuid,
                 messages=[provider_message.Message(role="user", content=prompt)],
                 funcs=[],
+                timeout=120,
                 extra_args={},
             )
 
