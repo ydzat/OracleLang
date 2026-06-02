@@ -86,7 +86,6 @@ class DivinationEventListener(EventListener):
 
             # Identity info from event
             launcher_type = ctx.event.launcher_type  # "person" or "group"
-            launcher_id = str(ctx.event.launcher_id)
             sender_id = str(ctx.event.sender_id)
 
             # Dispatch

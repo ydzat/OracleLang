@@ -73,7 +73,7 @@ class HistoryManager:
                     try:
                         with open(history_file, "r", encoding="utf-8") as f:
                             history = json.load(f)
-                    except:
+                    except (json.JSONDecodeError, OSError):
                         history = []
 
                 # 添加新记录
