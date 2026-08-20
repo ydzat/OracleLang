@@ -1,3 +1,5 @@
+
+
 # OracleLang 六爻算卦插件
 
 ![Version](https://img.shields.io/badge/version-4.0.0-blue)
@@ -232,7 +234,7 @@ OracleLang/
 │   │   ├── suangua.py      # 命令处理器（管理员命令）
 │   │   └── suangua.yaml    # 命令配置
 │   ├── event_listener/
-│   │   └── suangua.py      # 事件监听器（自然语言触发）
+│   │   └── default.py      # 事件监听器（自然语言触发）
 │   └── page/
 │       └── index.py        # WebUI 管理面板
 ├── src/
