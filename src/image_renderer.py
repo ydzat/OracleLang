@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import io
 import copy
+from functools import lru_cache
 import logging
 
 from PIL import Image as PILImage
@@ -16,6 +17,7 @@ MAX_WIDTH = 600
 MAX_HEIGHT = 3000
 
 
+@lru_cache(maxsize=1)
 def _newline_safe_style():
     """Use private fonts; do not monkey-patch Pillow or pillowmd globally."""
     from pillowmd.CustomMarkdownRenderer import DEFAULT_STYLE, MixFont

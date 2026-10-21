@@ -141,6 +141,12 @@ class StorageTests(unittest.IsolatedAsyncioTestCase):
         chain = await markdown_to_message_chain("# 标题\n\n中文段落\n- 项目\n```\n━━━\n━ ━\n```")
         self.assertTrue(chain)
         self.assertIs(MixFont.GetSize, original)
+        # pillowmd keeps a global measurement cache keyed by font instance.
+        # Repeated renders must reuse private fonts rather than retain new ones.
+        from pillowmd.CustomMarkdownRenderer import size_cache
+        before = len(size_cache)
+        await markdown_to_message_chain("# 标题\n\n中文段落\n- 项目\n```\n━━━\n━ ━\n```")
+        self.assertEqual(len(size_cache), before)
         self.plugin.plugin_config["display"]["style"] = "image"
         delivered = []
         async def reply(chain):

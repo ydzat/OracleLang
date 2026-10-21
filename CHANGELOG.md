@@ -5,6 +5,12 @@ All notable changes to OracleLang plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.3] — 2026-10-21
+
+### Fixed
+- Reuse OracleLang's private rendering fonts across requests so pillowmd's global measurement cache does not retain a new font set per image.
+- Includes the multiline rendering, reply accounting, and event routing fixes from 4.0.2.
+
 ## [4.0.2] — 2026-10-21
 
 ### Fixed
