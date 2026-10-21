@@ -1,2 +1,1 @@
-# Cross-platform file locking
-filelock>=3.12.0,<4.0.0
+# Persistence uses the LangBot SDK; no file-lock dependency is needed.

@@ -128,7 +128,7 @@ class DivinationEventListener(EventListener):
     async def _handle_history(self, ctx: context.EventContext, launcher_type: str, sender_id: str):
         """Reply with the user's recent divination history."""
         try:
-            records = self.plugin.history.get_recent_records(
+            records = await self.plugin.history.get_recent_records(
                 launcher_type, sender_id, limit=10
             )
         except Exception:
@@ -217,7 +217,7 @@ class DivinationEventListener(EventListener):
         # First token is the target user ID
         target_user = args.split(None, 1)[0].strip()
         try:
-            self.plugin.limit.reset_user(launcher_type="person", user_id=target_user)
+            await self.plugin.limit.reset_user(launcher_type="person", user_id=target_user)
             await ctx.reply(
                 platform_message.MessageChain([
                     platform_message.Plain(
@@ -236,7 +236,7 @@ class DivinationEventListener(EventListener):
     async def _admin_stats(self, ctx: context.EventContext):
         """Admin: show global usage statistics."""
         try:
-            usage_stats = self.plugin.limit.get_usage_statistics()
+            usage_stats = await self.plugin.limit.get_usage_statistics()
             stats_text = (
                 f"📊 系统使用统计：\n"
                 f"总用户数：{usage_stats.get('total_users', 0)}\n"
@@ -274,7 +274,7 @@ class DivinationEventListener(EventListener):
             return
 
         # Pre-check daily limit (new API with launcher_type)
-        if not self.plugin.limit.check_user_limit(launcher_type, sender_id):
+        if not await self.plugin.limit.check_user_limit(launcher_type, sender_id):
             remaining_time = self.plugin.limit.get_reset_time()
             daily_max = self.plugin.plugin_config.get("limit", {}).get("daily_max", 3)
             await ctx.reply(

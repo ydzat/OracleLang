@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import os
 import re
 import json
 import asyncio
 import logging
 from typing import Dict, List, Any, Optional
-from filelock import FileLock
 
 
 class HexagramInterpreter:
@@ -21,80 +22,15 @@ class HexagramInterpreter:
         self.logger = logger or logging.getLogger(__name__)
     
     async def load_data(self):
-        """加载卦象静态数据"""
-        try:
-            # 确保data目录存在
-            data_dir = os.path.join(self.base_dir, "data/static")
-            os.makedirs(data_dir, exist_ok=True)
-
-            data_file = os.path.join(data_dir, "hexagrams.json")
-
-            # 检查数据文件是否存在，不存在则创建基础数据
-            if not os.path.exists(data_file):
-                self.logger.info(f"Hexagram data file not found, creating default data: {data_file}")
-                await self._create_default_data(data_file)
-
-            self.logger.debug(f"Loading hexagram data from: {data_file}")
-
-            # 加载数据（使用跨平台文件锁）
-            lock_file = data_file + ".lock"
-            lock = FileLock(lock_file, timeout=10)
-
-            with lock:
-                with open(data_file, "r", encoding="utf-8") as f:
-                    self.hexagrams_data = json.load(f)
-
-            self.data_loaded = True
-            self.logger.info(f"Loaded {len(self.hexagrams_data)} hexagrams data")
-
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse hexagram data JSON: {str(e)}", exc_info=True)
-            self.hexagrams_data = {}
-            raise
-
-        except Exception as e:
-            self.logger.error(f"Failed to load hexagram data: {str(e)}", exc_info=True)
-            self.hexagrams_data = {}
-            raise
-            
-    async def _create_default_data(self, file_path: str):
-        """创建默认的卦象数据文件 - 包含完整的64卦数据"""
-        # 完整的64卦数据
-        default_data = self._get_complete_hexagram_data()
-
-        # 写入文件（使用跨平台文件锁）
-        try:
-            lock_file = file_path + ".lock"
-            lock = FileLock(lock_file, timeout=10)
-
-            with lock:
-                with open(file_path, "w", encoding="utf-8") as f:
-                    json.dump(default_data, f, ensure_ascii=False, indent=2)
-
-            self.logger.info(f"Created default hexagram data file with {len(default_data)} hexagrams")
-        except Exception as e:
-            self.logger.error(f"Failed to create default hexagram data: {str(e)}", exc_info=True)
-            raise
-
-    def _get_complete_hexagram_data(self) -> Dict:
-        """获取完整的64卦数据"""
-        # 尝试从hexagrams_complete.json读取完整数据
-        complete_data_file = os.path.join(self.base_dir, "data/static/hexagrams_complete.json")
-
-        if os.path.exists(complete_data_file):
-            try:
-                with open(complete_data_file, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    if len(data) == 64:
-                        self.logger.info("Loaded complete hexagram data from hexagrams_complete.json")
-                        return data
-            except Exception as e:
-                self.logger.warning(f"Failed to load complete data file: {str(e)}")
-
-        # 如果无法读取完整数据文件，返回基础的64卦框架
-        # 这确保即使在最坏的情况下，系统也能正常运行
-        self.logger.warning("Using minimal hexagram data structure")
-        return self._get_minimal_hexagram_data()
+        """Read bundled static data without generating files or lock files."""
+        data_file = os.path.join(self.base_dir, "data/static/hexagrams_complete.json")
+        with open(data_file, "r", encoding="utf-8") as stream:
+            data = json.load(stream)
+        if not isinstance(data, dict) or set(data) != {str(i) for i in range(1, 65)}:
+            raise ValueError("Bundled hexagram data must contain keys 1 through 64")
+        self.hexagrams_data = data
+        self.data_loaded = True
+        self.logger.info("Loaded 64 bundled hexagrams")
 
     def _get_minimal_hexagram_data(self) -> Dict:
         """获取最小的64卦数据框架（用于备用）"""

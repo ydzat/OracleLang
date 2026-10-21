@@ -1,10 +1,16 @@
 # OracleLang 六爻算卦插件
 
-![Version](https://img.shields.io/badge/version-4.0.0-blue)
+![Version](https://img.shields.io/badge/version-4.0.1-blue)
 
 OracleLang 是一个基于传统六爻占卜原理的算卦插件，为 [LangBot](https://github.com/langbot-app/LangBot) 平台开发。使用传统的**三钱法**起卦，模拟投掷硬币生成卦象，并提供专业的卦象解读。
 
 ## 更新日志
+
+### 4.0.1 (2026-10-21)
+- **修复**：云端只读代码目录导致插件初始化失败。
+- **变更**：历史记录与次数统计使用 SDK 插件存储接口，静态卦象直接从随包文件读取。
+- **迁移**：首次访问时自动导入现有本地记录，原文件保留；迁移后以 SDK 存储为准。
+
 
 ### 4.0.0 (2026-06-02)
 - **重大更新**: 升级到 LangBot SDK 0.3.11，命令触发改为自然语言 `算卦`
@@ -264,3 +270,33 @@ OracleLang/
 - 任何修改版本必须使用相同的许可证
 
 Copyright (C) 2023-2026 @ydzat
+
+## Persistent storage (4.0.1+)
+
+History and daily usage use LangBot's `get_plugin_storage`, `set_plugin_storage`,
+and `get_plugin_storage_keys` APIs. The plugin does not create directories,
+JSON files, or lock files under its code directory. Static hexagrams are read
+from the bundled `data/static/hexagrams_complete.json`.
+
+For existing self-hosted installations, leave `data/history/*.json` and
+`data/limits/daily_usage.json` in place for the first access after upgrading.
+They are imported only when the corresponding SDK key is absent, and are never
+modified or packaged for distribution. Keep a backup before reinstalling or
+replacing an installation directory. A clean Cloud installation needs no files.
+
+Storage values are reloaded for each operation, not cached across installations.
+An asyncio lock serializes read-modify-write operations within one plugin process;
+it is not a distributed transaction or a multi-worker quota reservation.
+
+### Storage regression tests
+
+With the LangBot plugin SDK installed, run from the repository root:
+
+```bash
+python -B -m unittest discover -s tests -v
+```
+
+Tests use the real SDK proxy with a local SQLite test transport. They do not call
+live messaging platforms or a production LangBot Host. For Cloud filesystem
+regression checks, run the suite with the repository bind-mounted read-only and
+with a writable system temporary directory.

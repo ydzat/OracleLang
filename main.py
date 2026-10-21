@@ -1,7 +1,7 @@
 """
 OracleLang Plugin - Liu Yao Divination Plugin for LangBot 4.0
 Uses traditional San Qian Fa (coin toss method) for divination
-Version: 4.0.0
+Version: 4.0.1
 Author: ydzat
 """
 from __future__ import annotations
@@ -19,6 +19,7 @@ from src.interpreter import HexagramInterpreter
 from src.glyphs import HexagramRenderer
 from src.history import HistoryManager
 from src.limit import UsageLimit
+from src.storage import PluginStorage
 
 
 # Setup logger
@@ -44,11 +45,6 @@ class OracleLangPlugin(BasePlugin):
 
         # Get plugin directory
         plugin_dir = pathlib.Path(__file__).parent.absolute()
-
-        # Ensure data directories exist
-        os.makedirs(os.path.join(plugin_dir, "data/history"), exist_ok=True)
-        os.makedirs(os.path.join(plugin_dir, "data/static"), exist_ok=True)
-        os.makedirs(os.path.join(plugin_dir, "data/limits"), exist_ok=True)
 
         # Get plugin configuration from manifest
         config_data = self.get_config()
@@ -151,8 +147,9 @@ class OracleLangPlugin(BasePlugin):
         self.calculator = HexagramCalculator(logger=logger)
         self.interpreter = HexagramInterpreter(self.plugin_config, plugin_dir, plugin=self, logger=logger)
         self.renderer = HexagramRenderer(logger=logger)
-        self.history = HistoryManager(os.path.join(plugin_dir, "data/history"), logger=logger)
-        self.limit = UsageLimit(self.plugin_config, os.path.join(plugin_dir, "data/limits"), logger=logger)
+        storage = PluginStorage(self)
+        self.history = HistoryManager(storage, os.path.join(plugin_dir, "data/history"), logger=logger)
+        self.limit = UsageLimit(self.plugin_config, storage, os.path.join(plugin_dir, "data/limits"), logger=logger)
 
         # Load hexagram data
         logger.info("Loading hexagram data...")
@@ -204,9 +201,9 @@ class OracleLangPlugin(BasePlugin):
         """Parse and return the question from command arguments"""
         return cmd_args.strip()
 
-    def _get_history_text(self, launcher_type: str, sender_id: str) -> str:
+    async def _get_history_text(self, launcher_type: str, sender_id: str) -> str:
         """Get user's divination history"""
-        records = self.history.get_recent_records(launcher_type, sender_id, limit=10)
+        records = await self.history.get_recent_records(launcher_type, sender_id, limit=10)
 
         if not records:
             return "您还没有算卦记录"
@@ -281,8 +278,8 @@ class OracleLangPlugin(BasePlugin):
         )
 
         # Update usage
-        self.limit.update_usage(launcher_type, sender_id)
-        remaining = self.limit.get_remaining(launcher_type, sender_id)
+        await self.limit.update_usage(launcher_type, sender_id)
+        remaining = await self.limit.get_remaining(launcher_type, sender_id)
 
         # Build response using MarkdownFormatter
         result_text = self._format_response(
@@ -290,7 +287,7 @@ class OracleLangPlugin(BasePlugin):
         )
 
         # Save to history
-        self.history.save_record(
+        await self.history.save_record(
             launcher_type=launcher_type,
             user_id=sender_id,
             question=question,

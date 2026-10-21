@@ -155,3 +155,7 @@ AGENTS.md
 # OS
 .DS_Store
 Thumbs.db
+
+# Build-only and environment files
+.github/
+.env*

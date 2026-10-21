@@ -5,6 +5,19 @@ All notable changes to OracleLang plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.1] — 2026-10-21
+
+### Fixed
+- Cloud startup no longer creates directories or lock files in the read-only plugin code directory.
+- History and daily usage now persist through the SDK plugin storage API; all command, event, and page callers await storage operations.
+- Load bundled hexagram data directly without generating a second JSON file.
+- Migrate existing local history and usage files on first access without changing the originals. Cleared history is not re-imported.
+- Propagate storage errors rather than silently reporting a successful write.
+
+### Validation
+- Six regression tests cover persistence across instance/transport restarts, legacy migration, history retention, quota reset, concurrent updates, scope separation, and storage failures.
+- The same suite passes with the plugin directory mounted read-only (EROFS).
+
 ## [4.0.0] — 2026-06-02
 
 ### Breaking Changes

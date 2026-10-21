@@ -27,7 +27,7 @@ class OracleAdminPage(Page):
     async def _get_stats(self) -> PageResponse:
         try:
             limit = self.plugin.limit  # type: ignore[attr-defined]
-            stats = limit.get_usage_statistics()
+            stats = await limit.get_usage_statistics()
             reset_time = limit.get_reset_time()
 
             return PageResponse.ok(data={
@@ -43,7 +43,7 @@ class OracleAdminPage(Page):
     async def _get_users(self) -> PageResponse:
         try:
             limit = self.plugin.limit  # type: ignore[attr-defined]
-            stats = limit.get_usage_statistics()
+            stats = await limit.get_usage_statistics()
 
             return PageResponse.ok(data={
                 "users": [],

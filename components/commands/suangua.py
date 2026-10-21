@@ -50,7 +50,7 @@ class SuanguaCommand(Command):
                     return
 
                 # Check user daily usage limit
-                if not self.plugin.limit.check_user_limit(launcher_type, sender_id):
+                if not await self.plugin.limit.check_user_limit(launcher_type, sender_id):
                     remaining_time = self.plugin.limit.get_reset_time()
                     yield CommandReturn(
                         text=f"您今日的算卦次数已达上限（{self.plugin.plugin_config['limit']['daily_max']}次/天），请等待重置。\n下次重置时间: {remaining_time}"
@@ -101,7 +101,7 @@ class SuanguaCommand(Command):
             try:
                 sender_id = str(context.session.launcher_id)
                 launcher_type = str(context.session.launcher_type.value) if hasattr(context.session.launcher_type, 'value') else str(context.session.launcher_type)
-                history_text = self.plugin._get_history_text(launcher_type, sender_id)
+                history_text = await self.plugin._get_history_text(launcher_type, sender_id)
                 yield CommandReturn(text=history_text)
                     
             except Exception as e:
@@ -149,7 +149,7 @@ class SuanguaCommand(Command):
                     return
 
                 target_user = context.crt_params[0]
-                self.plugin.limit.reset_user(launcher_type, target_user)
+                await self.plugin.limit.reset_user(launcher_type, target_user)
                 yield CommandReturn(text=f"✅ **已重置**用户 {target_user} 的今日使用次数")
 
             except Exception as e:
@@ -173,7 +173,7 @@ class SuanguaCommand(Command):
                     yield CommandReturn(text="**错误**: 此命令仅限管理员使用")
                     return
 
-                stats = self.plugin.limit.get_usage_statistics()
+                stats = await self.plugin.limit.get_usage_statistics()
                 stats_text = f"""## 📊 系统使用统计
 - **总用户数**: {stats['total_users']}
 - **总使用次数**: {stats['total_usage']}
