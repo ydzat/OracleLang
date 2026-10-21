@@ -1,7 +1,7 @@
 """
 OracleLang Plugin - Liu Yao Divination Plugin for LangBot 4.0
 Uses traditional San Qian Fa (coin toss method) for divination
-Version: 4.0.1
+Version: 4.0.2
 Author: ydzat
 """
 from __future__ import annotations
@@ -240,7 +240,7 @@ class OracleLangPlugin(BasePlugin):
             daily_max=self.plugin_config.get("limit", {}).get("daily_max", 3),
         )
 
-    async def process_divination(self, question: str, launcher_type: str, sender_id: str) -> str:
+    async def process_divination(self, question: str, launcher_type: str, sender_id: str, *, deliver=None) -> str:
         """
         Process divination request using coin toss method
 
@@ -277,15 +277,19 @@ class OracleLangPlugin(BasePlugin):
             use_llm=use_llm
         )
 
-        # Update usage
-        await self.limit.update_usage(launcher_type, sender_id)
-        remaining = await self.limit.get_remaining(launcher_type, sender_id)
+        # Show the expected remainder; do not charge for generation/render failures.
+        remaining = max(0, await self.limit.get_remaining(launcher_type, sender_id) - 1)
 
         # Build response using MarkdownFormatter
         result_text = self._format_response(
             question, hexagram_data, interpretation, visual, remaining=remaining
         )
 
+        if deliver is not None:
+            await deliver(result_text)
+
+        # Commit only after successful delivery (or return preparation for API callers).
+        await self.limit.update_usage(launcher_type, sender_id)
         # Save to history
         await self.history.save_record(
             launcher_type=launcher_type,
@@ -296,3 +300,12 @@ class OracleLangPlugin(BasePlugin):
         )
 
         return result_text
+    async def deliver_divination(self, context, result_text):
+        """Render and deliver through the SDK's current message context."""
+        from langbot_plugin.api.entities.builtin.platform import message
+        if self.plugin_config.get("display", {}).get("style") == "image":
+            from src.image_renderer import markdown_to_message_chain
+            chain = await markdown_to_message_chain(result_text)
+        else:
+            chain = message.MessageChain([message.Plain(text=result_text)])
+        await context.reply(chain)

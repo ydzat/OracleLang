@@ -5,6 +5,18 @@ All notable changes to OracleLang plugin will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.2] — 2026-10-21
+
+### Fixed
+- Render multiline Markdown with pillowmd/Pillow 13: private font instances skip CR/LF glyph measurement while retaining the renderer's line-break handling and RAQM for normal text. No global library patch or code-directory writes.
+- Claim matching divination messages before processing, so exceptions cannot fall through to the main agent pipeline.
+- Charge usage and save history only after the SDK reply completes in both command and event handlers. Rendering or reply failures leave usage/history unchanged.
+- Declare the existing pillowmd and Pillow rendering dependencies explicitly.
+
+### Validation
+- Ten tests pass, including real multiline image rendering, successful delivery, failed rendering/delivery, and event error routing.
+- LLM integration continues to use LangBot's model UUID and SDK APIs; no plugin-owned API key configuration is introduced.
+
 ## [4.0.1] — 2026-10-21
 
 ### Fixed

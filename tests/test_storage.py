@@ -134,6 +134,78 @@ class StorageTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(OSError):
             await self.plugin.limit.update_usage("person", "test")
 
+    async def test_real_multiline_image_and_successful_delivery(self):
+        from src.image_renderer import markdown_to_message_chain
+        from pillowmd.CustomMarkdownRenderer import MixFont
+        original = MixFont.GetSize
+        chain = await markdown_to_message_chain("# 标题\n\n中文段落\n- 项目\n```\n━━━\n━ ━\n```")
+        self.assertTrue(chain)
+        self.assertIs(MixFont.GetSize, original)
+        self.plugin.plugin_config["display"]["style"] = "image"
+        delivered = []
+        async def reply(chain):
+            self.assertEqual(await self.plugin.limit.get_remaining("person", "delivery"), 3)
+            delivered.append(chain)
+        from types import SimpleNamespace
+        context = SimpleNamespace(reply=reply)
+        await self.plugin.process_divination(
+            "测试", "person", "delivery",
+            deliver=lambda text: self.plugin.deliver_divination(context, text),
+        )
+        self.assertEqual(len(delivered), 1)
+        self.assertEqual(await self.plugin.limit.get_remaining("person", "delivery"), 2)
+        self.assertEqual(len(await self.plugin.history.get_recent_records("person", "delivery")), 1)
+
+    async def test_failed_delivery_does_not_charge_or_save(self):
+        async def fail(text):
+            raise OSError("Platform delivery failed")
+        with self.assertRaises(OSError):
+            await self.plugin.process_divination("测试", "person", "failed", deliver=fail)
+        self.assertEqual(await self.plugin.limit.get_remaining("person", "failed"), 3)
+        self.assertEqual(await self.plugin.history.get_recent_records("person", "failed"), [])
+
+    async def test_render_failure_does_not_charge_or_save(self):
+        from unittest.mock import patch
+        from types import SimpleNamespace
+        self.plugin.plugin_config["display"]["style"] = "image"
+        async def reply(chain):
+            self.fail("Rendering failure must not reach delivery")
+        with patch("src.image_renderer.markdown_to_message_chain", side_effect=RuntimeError("render failure")):
+            with self.assertRaises(RuntimeError):
+                await self.plugin.process_divination(
+                    "测试", "person", "render",
+                    deliver=lambda text: self.plugin.deliver_divination(SimpleNamespace(reply=reply), text),
+                )
+        self.assertEqual(await self.plugin.limit.get_remaining("person", "render"), 3)
+        self.assertEqual(await self.plugin.history.get_recent_records("person", "render"), [])
+
+    async def test_event_failure_still_prevents_default_processing(self):
+        from components.event_listener.default import DivinationEventListener
+        from types import SimpleNamespace
+        listener = DivinationEventListener()
+        listener.plugin = self.plugin
+        state = {"prevented": False, "replies": 0}
+        def prevent_default():
+            state["prevented"] = True
+        async def reply(chain):
+            self.assertTrue(state["prevented"])
+            state["replies"] += 1
+            if state["replies"] == 1:
+                raise OSError("Platform delivery failed")
+        context = SimpleNamespace(
+            event=SimpleNamespace(text_message="算卦 测试", launcher_type="person", sender_id="event"),
+            prevent_default=prevent_default, reply=reply,
+        )
+        with self.assertLogs("components.event_listener.default", level="ERROR"):
+            await listener._handle_message(context)
+        self.assertTrue(state["prevented"])
+        self.assertEqual(state["replies"], 2)
+        self.assertEqual(await self.plugin.limit.get_remaining("person", "event"), 3)
+        state["prevented"] = False
+        context.event.text_message = "普通消息"
+        await listener._handle_message(context)
+        self.assertFalse(state["prevented"])
+
 
 if __name__ == "__main__":
     unittest.main()

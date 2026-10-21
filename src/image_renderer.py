@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import io
+import copy
 import logging
 
 from PIL import Image as PILImage
@@ -15,6 +16,37 @@ MAX_WIDTH = 600
 MAX_HEIGHT = 3000
 
 
+def _newline_safe_style():
+    """Use private fonts; do not monkey-patch Pillow or pillowmd globally."""
+    from pillowmd.CustomMarkdownRenderer import DEFAULT_STYLE, MixFont
+
+    class NewlineSafeFont(MixFont):
+        def GetSize(self, text):
+            # pillowmd measures characters before handling line breaks. Raqm
+            # cannot shape CR/LF; the renderer owns their line-height handling.
+            if text in ("\n", "\r"):
+                return (0, 0)
+            return super().GetSize(text)
+
+    style = copy.copy(DEFAULT_STYLE)
+    fonts = {}
+
+    def get_font(main_font, size, second_fonts=None):
+        source = DEFAULT_STYLE.GetMixFont(main_font, size, second_fonts)
+        key = id(source)
+        if key not in fonts:
+            fonts[key] = NewlineSafeFont(
+                source.font_path, source.size,
+                layout_engine=source.layout_engine,
+                second_fonts=source.seconde_font_paths,
+                font_y_correct=source.font_y_correct,
+            )
+        return fonts[key]
+
+    style.GetMixFont = get_font
+    return style
+
+
 async def markdown_to_message_chain(
     markdown_text: str,
     title: str = "算卦结果",
@@ -26,6 +58,7 @@ async def markdown_to_message_chain(
         result = await pillowmd.MdToImage(
             text=markdown_text,
             title=title,
+            style=_newline_safe_style(),
         )
 
         if not result or not result.image:

@@ -72,6 +72,9 @@ class DivinationEventListener(EventListener):
             if not text.startswith("算卦"):
                 return  # IGNORE silently
 
+            # Claim matching messages even if rendering or delivery fails.
+            ctx.prevent_default()
+
             # Extract content after "算卦"
             content = text[2:].strip()
             tokens = content.split(None, 1) if content else []
@@ -103,8 +106,6 @@ class DivinationEventListener(EventListener):
                 # divination (subcommand == "")
                 await self._handle_divination(ctx, question, launcher_type, sender_id)
 
-            # 阻止主 pipeline 重复处理此消息
-            ctx.prevent_default()
 
         except Exception:
             logger.error("Error handling 算卦 message", exc_info=True)
@@ -289,23 +290,10 @@ class DivinationEventListener(EventListener):
             )
             return
 
-        # Process divination via plugin
-        try:
-            result = await self.plugin.process_divination(
-                question=question.strip(),
-                launcher_type=launcher_type,
-                sender_id=sender_id,
-            )
-        except Exception:
-            logger.error(f"Divination failed for {sender_id}", exc_info=True)
-            result = "❌ 算卦过程出现错误，请稍后再试。"
-
-        if self.plugin.plugin_config.get("display", {}).get("style") == "image":
-            msg_chain = await markdown_to_message_chain(result)
-            await ctx.reply(msg_chain)
-        else:
-            await ctx.reply(
-                platform_message.MessageChain([
-                    platform_message.Plain(text=result),
-                ])
-            )
+        # Persist usage only after the platform acknowledges the reply.
+        await self.plugin.process_divination(
+            question=question.strip(),
+            launcher_type=launcher_type,
+            sender_id=sender_id,
+            deliver=lambda result: self.plugin.deliver_divination(ctx, result),
+        )

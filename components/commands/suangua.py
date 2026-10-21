@@ -62,9 +62,8 @@ class SuanguaCommand(Command):
                     question=question.strip(),
                     launcher_type=launcher_type,
                     sender_id=sender_id,
+                    deliver=lambda text: self.plugin.deliver_divination(context, text),
                 )
-
-                yield CommandReturn(text=result)
 
             except Exception as e:
                 logger.error(f"Error handling divination command: {e}", exc_info=True)

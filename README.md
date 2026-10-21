@@ -2,11 +2,18 @@
 
 # OracleLang 六爻算卦插件
 
-![Version](https://img.shields.io/badge/version-4.0.1-blue)
+![Version](https://img.shields.io/badge/version-4.0.2-blue)
 
 OracleLang 是一个基于传统六爻占卜原理的算卦插件，为 [LangBot](https://github.com/langbot-app/LangBot) 平台开发。使用传统的**三钱法**起卦，模拟投掷硬币生成卦象，并提供专业的卦象解读。
 
 ## 更新日志
+
+### 4.0.2 (2026-10-21)
+- **修复**：Pillow 13 下多行 Markdown 图片渲染失败，保留中文字体排版。
+- **修复**：算卦异常后不再交给主流水线重复处理。
+- **修复**：图片生成或回复失败不扣次数、不保存该次记录。
+- 模型仍统一使用 LangBot 管理的模型；插件无需单独配置 API Key。
+
 
 ### 4.0.1 (2026-10-21)
 - **修复**：云端只读代码目录导致插件初始化失败。
@@ -302,3 +309,13 @@ Tests use the real SDK proxy with a local SQLite test transport. They do not cal
 live messaging platforms or a production LangBot Host. For Cloud filesystem
 regression checks, run the suite with the repository bind-mounted read-only and
 with a writable system temporary directory.
+
+### Delivery semantics
+
+Command and event handlers await the SDK reply before updating usage/history.
+An SDK reply success is the available delivery acknowledgement; a network timeout
+may still be ambiguous. Platform delivery and SDK storage are separate operations,
+not a distributed transaction. Concurrent quota reservation is not implemented.
+
+Pillow 13 newline compatibility uses private `MixFont` instances supplied through
+pillowmd's style API. It does not modify global font classes or disable RAQM.
